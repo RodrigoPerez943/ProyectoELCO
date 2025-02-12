@@ -1,0 +1,13 @@
+%%Hay que compilar este archivo
+
+syntax = "proto3";
+
+import "nanopb.proto";  // Importa las definiciones específicas de nanopb
+
+message SensorData {
+  float temperature = 1;
+  float humidity    = 2;
+  uint32 timestamp  = 3;
+  string node_id    = 4 [(nanopb).max_size = 20]; // Identificador del nodo (máximo 20 caracteres)
+  float pressure    = 5;  // Presión en Pascales (u otra unidad según tu conversión)
+}
