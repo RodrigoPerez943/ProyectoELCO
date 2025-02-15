@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import scipy.io
 import os
 
+#### IMPORTANTE: pip install pandas matplotlib scipy
+
 # Cargar el archivo CSV
 file_path = "E:\ETSIT\TEL\Cuarto\ELCO\PROYECTO\sensor_data.csv"  # Reemplaza con la ruta de tu archivo
 df = pd.read_csv(file_path)
