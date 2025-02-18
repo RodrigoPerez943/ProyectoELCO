@@ -5,12 +5,42 @@ import matplotlib.pyplot as plt
 import scipy.io
 import os
 from datetime import datetime
+import subprocess
 
 #### IMPORTANTE: pip install pandas matplotlib scipy
 
+
+def find_sensor_data(filename="sensor_data.csv"):
+    """
+    Busca el archivo 'sensor_data.csv' en la misma carpeta donde está el script.
+    
+    Parámetros:
+        filename (str): Nombre del archivo a buscar.
+
+    Retorna:
+        str: Ruta absoluta del archivo si se encuentra.
+        None: Si el archivo no se encuentra.
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))  # Directorio del script
+    file_path = os.path.join(script_dir, filename)  # Ruta completa del archivo en la misma carpeta
+    
+    if os.path.exists(file_path):  # Verifica si el archivo existe
+        return file_path
+    else:
+        #Para comodidad
+        script_dir = os.path.dirname(os.path.abspath(__file__))  # Obtener la ruta del script
+        script_path = os.path.join(script_dir, "generador_csv_prueba.py")
+        if os.path.exists(script_path):  # Verificar si el script existe
+            subprocess.run(["python", script_path], check=True)  # Ejecutar el script
+            return find_sensor_data()
+
+
+    return None  # Si no lo encuentra, devuelve None
+
+
+
 # Cargar el archivo CSV
-file_path = "E:\ETSIT\TEL\Cuarto\ELCO\PROYECTO\sensor_data.csv"  # Reemplaza con la ruta de tu archivo
-# file_path = "C:/Users/migue/Documents/GitHub/ProyectoELCO/sensor_data.csv" 
+file_path = find_sensor_data() 
 df = pd.read_csv(file_path)
 
 # Convertir el timestamp a un formato legible si es necesario
@@ -100,8 +130,9 @@ for idx, group in enumerate(node_groups):
     plt.grid()
     
     # Guardar la imagen
-    image_path = os.path.join(output_folder_png, f"temperatura_nodos_{idx+1}.png")
-    plt.savefig(image_path, dpi=300)
+    image_temp_filename = f"Temperatura_nodos_{idx+1}_{current_time}.png"
+    image_temp_path = os.path.join(output_folder_png, image_temp_filename)
+    plt.savefig(image_temp_path, dpi=300)
     plt.close()
 
     print(f"Gráfica de temperatura guardada: {image_path}")
