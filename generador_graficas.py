@@ -10,6 +10,7 @@ from datetime import datetime
 
 # Cargar el archivo CSV
 file_path = "E:\ETSIT\TEL\Cuarto\ELCO\PROYECTO\sensor_data.csv"  # Reemplaza con la ruta de tu archivo
+# file_path = "C:/Users/migue/Documents/GitHub/ProyectoELCO/sensor_data.csv" 
 df = pd.read_csv(file_path)
 
 # Convertir el timestamp a un formato legible si es necesario
@@ -23,6 +24,8 @@ os.makedirs(output_folder_png, exist_ok=True)
 
 # Obtener lista de node_id únicos
 nodes = df["node_id"].unique()
+# Agrupar de 3 en 3
+node_groups = [nodes[i:i+3] for i in range(0, len(nodes), 3)]  
 
 # Generar gráficas para cada node_id
 for node in nodes:
@@ -81,3 +84,26 @@ for node in nodes:
     plt.close()
 
     print(f"Gráfica guardada: {image_path}")
+
+# Generar gráficas de temperatura de 3 nodos juntos
+for idx, group in enumerate(node_groups):
+    plt.figure(figsize=(10, 5))
+
+    for node in group:
+        node_df = df[df["node_id"] == node]
+        plt.plot(node_df["timestamp"], node_df["temperature"], marker="o", linestyle="-", label=f"Nodo {node}")
+
+    plt.xlabel("Tiempo")
+    plt.ylabel("Temperatura (°C)")
+    plt.title(f"Temperatura de los nodos {', '.join(map(str, group))}")
+    plt.legend()
+    plt.grid()
+    
+    # Guardar la imagen
+    image_path = os.path.join(output_folder_png, f"temperatura_nodos_{idx+1}.png")
+    plt.savefig(image_path, dpi=300)
+    plt.close()
+
+    print(f"Gráfica de temperatura guardada: {image_path}")
+
+print("Generación de gráficas completada.")
