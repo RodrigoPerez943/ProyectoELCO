@@ -4,6 +4,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import scipy.io
 import os
+from datetime import datetime
 
 #### IMPORTANTE: pip install pandas matplotlib scipy
 
@@ -13,7 +14,7 @@ df = pd.read_csv(file_path)
 
 # Convertir el timestamp a un formato legible si es necesario
 df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
-
+current_time = datetime.now().strftime("%Y%m%d_%H%M%S")  # Formato YYYYMMDD_HHMMSS
 #Crear carpetas para guardar archivos
 output_folder_mat = "mat_files"
 output_folder_png = "graficas"
@@ -66,11 +67,13 @@ for node in nodes:
         "pressure": node_df["pressure"].values,
         "timestamp": node_df["timestamp"].astype("int64").values,
     }
-    mat_path = os.path.join(output_folder_mat, f"data_node_{node}.mat")
+    mat_filename = f"data_node_{node}_{current_time}.mat"
+    mat_path = os.path.join(output_folder_mat, mat_filename)
     scipy.io.savemat(mat_path, mat_data)
 
     # Guardar la imagen en la carpeta
-    image_path = os.path.join(output_folder_png, f"grafica_nodo_{node}.png")
+    image_filename = f"grafica_nodo_{node}_{current_time}.png"
+    image_path = os.path.join(output_folder_png,  image_filename)
     plt.tight_layout()
     plt.draw()  # Renderiza la figura en segundo plano
     plt.pause(0.1)  # Espera un momento antes de guardar
