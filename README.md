@@ -2,6 +2,4 @@
 
 ## Descripcción
 
-Hay que espabilar ... Yo soy el mejor Miguel
-
-Miguel es un pringao
+Proyecto en construcción ...
