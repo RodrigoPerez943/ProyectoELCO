@@ -1,6 +1,7 @@
 import csv
 import random
 import time
+import os
 
 def generate_sensor_data(filename="sensor_data.csv"):
     nodes = [1, 2, 3]  # Tres nodos
@@ -9,9 +10,13 @@ def generate_sensor_data(filename="sensor_data.csv"):
     initial_humidity = 55.2
     initial_pressure = 1000  # Presión en hPa
     timestamp_start = int(time.time())  # Timestamp actual
-    interval = 15  # Intervalo de 15 segundos entre mediciones
+    interval = 15  # Intervalo de 1 minuto entre mediciones
+    
+    # Obtener la ruta absoluta del script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(script_dir, filename)
 
-    with open(filename, mode='w', newline='') as file:
+    with open(file_path, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["temperature", "humidity", "timestamp", "node_id", "pressure"])
         
@@ -32,4 +37,4 @@ def generate_sensor_data(filename="sensor_data.csv"):
 
 if __name__ == "__main__":
     generate_sensor_data()
-    print("Archivo CSV generado con éxito.")
+    print("Archivo CSV generado con éxito en la carpeta del script.")
