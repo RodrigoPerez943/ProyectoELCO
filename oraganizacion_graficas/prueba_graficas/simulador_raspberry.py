@@ -3,8 +3,9 @@ import time
 import random
 import serial
 import subprocess
+import serial.tools.list_ports
 
-# Configurar los puertos virtuales (deben coincidir con `setup_puertos_virtuales.py`)
+# Configuración de los puertos virtuales
 PUERTO_SIMULADOR = "COM10"
 PUERTO_RECOLECTOR = "COM11"
 BAUDRATE = 9600
@@ -15,21 +16,43 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Archivo de bandera para indicar modo simulado
 SIM_FLAG = os.path.join(BASE_DIR, "sim_mode.flag")
 
-# Rutas de los scripts de shell y de setup
+# Rutas de los scripts
 INICIAR_SCRIPT = os.path.join(BASE_DIR, "iniciar_sistema.sh")
 DETENER_SCRIPT = os.path.join(BASE_DIR, "archivar_y_detener.sh")
 SETUP_PUERTOS_SCRIPT = os.path.join(BASE_DIR, "setup_puertos_virtuales.py")
 
-# ✅ Crear los puertos virtuales antes de iniciar la simulación
+
+def verificar_puertos():
+    """ Verifica si los puertos COM10 y COM11 existen en el sistema. """
+    puertos = [port.device for port in serial.tools.list_ports.comports()]
+    return PUERTO_SIMULADOR in puertos and PUERTO_RECOLECTOR in puertos
+
+
 def iniciar_puertos_virtuales():
-    print("🔧 Creando puertos virtuales con setup_puertos_virtuales.py...")
-    subprocess.run(["python", SETUP_PUERTOS_SCRIPT], check=True)
+    """ Ejecuta setup_puertos_virtuales.py para configurar los puertos en VSPE. """
+    print("🔧 Verificando y creando puertos virtuales...")
+    
+    try:
+        subprocess.run(["python", SETUP_PUERTOS_SCRIPT], check=True)
+        print("✅ Puertos virtuales configurados correctamente.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error al ejecutar {SETUP_PUERTOS_SCRIPT}: {e}")
 
-    # Espera para que Windows registre los puertos
-    time.sleep(5)
 
-# ✅ Iniciar los scripts necesarios
+def esperar_puertos():
+    """ Espera hasta que los puertos COM10 y COM11 sean detectados por el sistema. """
+    print("⏳ Esperando a que Windows registre los puertos COM10 y COM11...")
+    for _ in range(10):  # Espera hasta 10 intentos (aprox. 10 segundos)
+        if verificar_puertos():
+            print("✅ Puertos detectados correctamente.")
+            return True
+        time.sleep(1)
+    print("❌ Los puertos no fueron detectados a tiempo.")
+    return False
+
+
 def iniciar_sistema():
+    """ Inicia el sistema y el recolector de datos """
     print("🚀 Iniciando sistema simulado...")
 
     # Ejecutar el script de inicialización
@@ -39,18 +62,25 @@ def iniciar_sistema():
     recolector_cmd = f'start cmd /k "python {os.path.join(BASE_DIR, "recolector_uart.py")} {PUERTO_RECOLECTOR}"'
     subprocess.Popen(recolector_cmd, shell=True)
 
-# ✅ Detener los scripts y limpiar archivos
+
 def detener_sistema():
+    """ Detiene el sistema y archiva los datos """
     print("🛑 Deteniendo el sistema y archivando datos...")
-    subprocess.Popen(["bash", DETENER_SCRIPT], cwd=BASE_DIR)
+    subprocess.run(["bash", DETENER_SCRIPT], cwd=BASE_DIR, check=True)
 
     # Eliminar el archivo de bandera de simulación
     if os.path.exists(SIM_FLAG):
         os.remove(SIM_FLAG)
         print("✅ Modo simulado desactivado.")
 
-# ✅ Ejecutar `setup_puertos_virtuales.py` antes de iniciar
+
+# ✅ Ejecutar `setup_puertos_virtuales.py` antes de iniciar la simulación
 iniciar_puertos_virtuales()
+
+# ✅ Esperar a que los puertos virtuales estén listos
+if not esperar_puertos():
+    print("❌ No se pudo continuar porque los puertos virtuales no fueron detectados.")
+    exit(1)
 
 # ✅ Crear el archivo de bandera para indicar modo simulado
 with open(SIM_FLAG, "w") as f:
