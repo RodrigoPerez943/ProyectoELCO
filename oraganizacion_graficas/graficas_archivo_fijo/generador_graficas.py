@@ -46,9 +46,11 @@ df = pd.read_csv(file_path)
 # Convertir el timestamp a un formato legible si es necesario
 df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
 current_time = datetime.now().strftime("%Y%m%d_%H%M%S")  # Formato YYYYMMDD_HHMMSS
+
 #Crear carpetas para guardar archivos
-output_folder_mat = "mat_files"
-output_folder_png = "graficas"
+script_dir = os.path.dirname(os.path.abspath(__file__))  
+output_folder_mat = os.path.join(script_dir, "mat_files")  
+output_folder_png = os.path.join(script_dir, "graficas") 
 os.makedirs(output_folder_mat, exist_ok=True)
 os.makedirs(output_folder_png, exist_ok=True)
 
