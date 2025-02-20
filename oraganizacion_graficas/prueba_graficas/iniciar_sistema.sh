@@ -11,14 +11,14 @@ GRAFICAS_SCRIPT="actualizar_graficas.py"
 
 # Ejecutar el script de recolección de datos (manteniéndolo en segundo plano)
 echo "📡 Iniciando recepción de datos por UART..."
-python3 "$UART_SCRIPT" &
+python "$UART_SCRIPT" &
 
 # Esperar unos segundos para asegurarse de que el CSV tiene datos antes de graficar
 sleep 3
 
 # Ejecutar el script de actualización de gráficas (manteniéndolo en segundo plano)
 echo "📊 Iniciando actualización de gráficas..."
-python3 "$GRAFICAS_SCRIPT" &
+python "$GRAFICAS_SCRIPT" &
 
 # Esperar a que ambos procesos terminen (evita que el script termine inmediatamente)
 wait
