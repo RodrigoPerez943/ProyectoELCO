@@ -5,9 +5,8 @@ import serial
 import subprocess
 
 # Configuración de UART
-PUERTO_SIMULADOR = "COM10"  # Puerto de simulación en Windows (VSPE)
-PUERTO_REAL = "/dev/serial0"  # UART real en Raspberry Pi
-BAUDRATE = 9600
+PUERTO_SERIE = "COM10"  # Puerto UART a utilizar en Windows (VSPE)
+BAUDRATE = 9600  # Mantener en 9600 para ser compatible con Raspberry Pi
 
 
 # Obtener la ruta del directorio donde está este script
@@ -17,38 +16,20 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INICIAR_SCRIPT = os.path.join(BASE_DIR, "iniciar_sistema.sh")
 DETENER_SCRIPT = os.path.join(BASE_DIR, "archivar_y_detener.sh")
 SETUP_PUERTOS_SCRIPT = os.path.join(BASE_DIR, "setup_puertos_virtuales.py")
-SIM_FLAG = os.path.join(BASE_DIR, "sim_mode.flag")  # Se crea en el directorio de ejecución
-
-
+SIM_FLAG = os.path.join(BASE_DIR, "sim_mode.flag") # Archivo de control
 
 with open(SIM_FLAG, "w") as f:
     f.write("SIMULATION MODE ACTIVE")
-
 print(f"✅ Archivo de simulación creado en: {SIM_FLAG}")
-
-
-
-# Determinar si estamos en simulación o en hardware real
-def es_modo_simulado():
-    return os.path.exists(SIM_FLAG)
-
-if es_modo_simulado():
-    puerto_serie = PUERTO_SIMULADOR
-    print("🟡 Modo SIMULADO detectado. Usando puerto virtual:", PUERTO_SIMULADOR)
-else:
-    # En una Raspberry Pi, usar el puerto real `/dev/serial0` o `/dev/ttyS0`
-    puerto_serie = PUERTO_REAL if os.path.exists(PUERTO_REAL) else "/dev/ttyS0"
-    print("🟢 Modo REAL detectado. Usando puerto UART:", puerto_serie)
 
 # Generar una dirección MAC aleatoria simulada
 def generar_mac_aleatoria():
     """ Genera una dirección MAC aleatoria con el formato XX:XX:XX:XX:XX:XX """
     return ":".join(f"{random.randint(0x00, 0xFF):02X}" for _ in range(6))
 
-# Determinar qué puerto usar (simulación vs UART real)
-
 # Asignar una dirección MAC simulada
-
+mac_simulada = generar_mac_aleatoria()
+print(f"📡 MAC del sensor simulado: {mac_simulada}")
 
 # Ejecutar `setup_puertos_virtuales.py` antes de iniciar la simulación
 def iniciar_puertos_virtuales():
@@ -67,12 +48,12 @@ def esperar_puertos():
     print("⏳ Esperando a que Windows registre los puertos virtuales...")
     for _ in range(10):  # Espera hasta 10 intentos (~10 segundos)
         try:
-            with serial.Serial(puerto_serie, BAUDRATE, timeout=1) as _:
-                print("✅ Puertos detectados correctamente.")
+            with serial.Serial(PUERTO_SERIE, BAUDRATE, timeout=1) as _:
+                print("✅ Puerto detectado correctamente.")
                 return True
         except serial.SerialException:
             time.sleep(1)
-    print("❌ Los puertos no fueron detectados a tiempo.")
+    print("❌ El puerto no fue detectado a tiempo.")
     return False
 
 # Iniciar el sistema
@@ -94,35 +75,49 @@ def detener_sistema():
         os.remove(SIM_FLAG)
         print("✅ Modo simulado desactivado.")
 
-
-
-# ✅ Esperar a que los puertos virtuales estén listos
-if not esperar_puertos():
-    print("❌ No se pudo continuar porque los puertos virtuales no fueron detectados.")
-    exit(1)
-
-
-mac_simulada = generar_mac_aleatoria()
-
 # ✅ Ejecutar `setup_puertos_virtuales.py` antes de iniciar la simulación
 iniciar_puertos_virtuales()
 
+# ✅ Esperar a que el puerto virtual esté listo
+if not esperar_puertos():
+    print("❌ No se pudo continuar porque el puerto virtual no fue detectado.")
+    exit(1)
+
+
+
+
+# ✅ Iniciar el sistema y los scripts necesarios
 iniciar_sistema()
 
-# ✅ Simulación de datos UART usando `pyserial`
+# ✅ Simulación de datos UART enviando en orden, pero en mensajes separados
 try:
-    with serial.Serial(puerto_serie, BAUDRATE, timeout=1) as uart:
+    with serial.Serial(PUERTO_SERIE, BAUDRATE, timeout=1) as uart:
         while True:
+            # 🔹 Se envía cada dato de manera secuencial
+            uart.write(f"MAC: {mac_simulada}\n".encode())
+            print(f"📡 Simulador UART: Enviando -> MAC: {mac_simulada}")
+            time.sleep(0.01)  # Pequeño delay
+
             temperature = round(random.uniform(20, 30), 2)
+            uart.write(f"T: {temperature}\n".encode())
+            print(f"📡 Simulador UART: Enviando -> T: {temperature}")
+            time.sleep(0.01)
+
             humidity = round(random.uniform(40, 60), 2)
+            uart.write(f"H: {humidity}\n".encode())
+            print(f"📡 Simulador UART: Enviando -> H: {humidity}")
+            time.sleep(0.01)
+
             pressure = round(random.uniform(900, 1100), 2)
+            uart.write(f"p: {pressure}\n".encode())
+            print(f"📡 Simulador UART: Enviando -> p: {pressure}")
+            time.sleep(0.01)
 
+            ext = round(random.uniform(0, 10), 2)
+            uart.write(f"EXT: {ext}\n".encode())
+            print(f"📡 Simulador UART: Enviando -> EXT: {ext}")
+            time.sleep(0.01)
 
-            # 🔹 Enviar los datos en el orden correcto: temperatura, humedad, timestamp, MAC, presión
-            medida = f"{temperature},{humidity},{mac_simulada},{pressure}\n"
-            uart.write(medida.encode())
-
-            print(f"📡 Simulador UART: Enviando -> {medida.strip()}")
             time.sleep(5)
 
 except KeyboardInterrupt:

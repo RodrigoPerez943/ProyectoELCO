@@ -1,49 +1,47 @@
 #!/bin/bash
 
-echo "🛑 Deteniendo el sistema de adquisición y graficado..."
+echo "🛑 Deteniendo el sistema y archivando datos..."
 
-# Obtener la ruta del directorio donde está este script
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Definir rutas de los scripts y archivos
+BASE_DIR=$(dirname "$(realpath "$0")")
+BUFFER_SCRIPT="$BASE_DIR/vaciar_buffer.py"
+GRAFICADOR_SCRIPT="$BASE_DIR/graficar_pendientes.py"
+CSV_FILE="$BASE_DIR/sensor_data.csv"
 
-# Buscar los procesos en ejecución y detenerlos
-PIDS=$(ps aux | grep -E "recolector_uart.py|actualizar_graficas.py" | grep -v grep | awk '{print $2}')
+# **Vaciar el buffer antes de archivar**
+echo "📤 Procesando datos pendientes en buffer..."
+python "$BUFFER_SCRIPT"
 
-if [ -z "$PIDS" ]; then
-    echo "⚠️ No hay procesos en ejecución."
-else
-    echo "🔹 Procesos encontrados: $PIDS"
-    kill -9 $PIDS
-    echo "✅ Procesos detenidos correctamente."
-fi
+# **Graficar los datos pendientes**
+echo "📊 Generando gráficas pendientes..."
+python "$GRAFICADOR_SCRIPT"
 
-# Crear carpeta con la fecha actual para archivar los datos
+echo "✅ Graficado finalizado."
+
+# **Archivar las gráficas**
 FECHA=$(date +"%Y-%m-%d_%H-%M-%S")
 ARCHIVO_DIR="$BASE_DIR/backup_$FECHA"
-
 mkdir -p "$ARCHIVO_DIR"
 
-# Mover carpetas completas en lugar de solo los archivos internos
 if [ -d "$BASE_DIR/graficas_png" ]; then
     mv "$BASE_DIR/graficas_png" "$ARCHIVO_DIR/"
-    echo "✅ Carpeta 'graficas_png' movida a $ARCHIVO_DIR/"
-else
-    echo "⚠️ No se encontró la carpeta 'graficas_png'."
+    echo "📁 Carpetas de imágenes PNG movidas a backup."
 fi
 
 if [ -d "$BASE_DIR/graficas_mat" ]; then
     mv "$BASE_DIR/graficas_mat" "$ARCHIVO_DIR/"
-    echo "✅ Carpeta 'graficas_mat' movida a $ARCHIVO_DIR/"
-else
-    echo "⚠️ No se encontró la carpeta 'graficas_mat'."
+    echo "📁 Carpetas de imágenes MAT movidas a backup."
 fi
 
-# Borrar el archivo CSV
-CSV_FILE="$BASE_DIR/sensor_data.csv"
+echo "✅ Archivos de gráficas movidos a: $ARCHIVO_DIR"
+
+# **Eliminar el CSV después de archivar**
 if [ -f "$CSV_FILE" ]; then
     rm -f "$CSV_FILE"
-    echo "✅ Archivo CSV eliminado."
+    echo "🗑️ Archivo CSV eliminado correctamente."
 else
-    echo "⚠️ No se encontró sensor_data.csv, no se eliminó nada."
+    echo "⚠️ No se encontró sensor_data.csv."
 fi
 
-echo "✅ Todas las carpetas y el CSV han sido archivados en $ARCHIVO_DIR."
+echo "✅ Sistema detenido y datos archivados."
+exit 0

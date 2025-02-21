@@ -21,7 +21,7 @@ while True:
     try:
         # Leer los datos actuales
         df = pd.read_csv(CSV_FILE)
-        print(df["temperature"])
+        #print(df["temperature"])
         if df.empty:
             print("⚠️ No hay datos en el archivo CSV. Esperando nuevas mediciones...")
             time.sleep(5)
@@ -89,4 +89,6 @@ while True:
     except Exception as e:
         print(f"⚠️ Error en la actualización de gráficas: {e}")
 
+
     time.sleep(5)  # Esperar 5 segundos antes de volver a leer el archivo
+

@@ -1,22 +1,13 @@
 import os
 import csv
 import json
-import serial
 import time
 from datetime import datetime
-import serial.tools.list_ports
 
-# Configuración de UART
-PUERTO_SIMULADOR = "COM11"  # Puerto de simulación en Windows (VSPE)
-PUERTO_REAL = "/dev/serial0"  # UART real en Raspberry Pi
-BAUDRATE = 9600
+# Archivos
+BUFFER_FILE = "buffer_uart.json"
 CSV_FILE = "sensor_data.csv"
 MAC_MAPPING_FILE = "mac_mapping.json"
-SIM_FLAG = os.path.join(os.getcwd(), "sim_mode.flag")  # Archivo que indica si estamos en simulación
-
-# Determinar si estamos en simulación o en hardware real
-def es_modo_simulado():
-    return os.path.exists(SIM_FLAG)  # Si el archivo existe, estamos en modo simulado
 
 # Cargar asignaciones de MAC si existen
 def cargar_mac_mapping():
@@ -25,10 +16,13 @@ def cargar_mac_mapping():
             return json.load(file)
     return {}
 
-# Guardar asignaciones de MAC
+# Guardar asignaciones de MAC sin bloquear el programa
 def guardar_mac_mapping(mac_mapping):
-    with open(MAC_MAPPING_FILE, "w") as file:
-        json.dump(mac_mapping, file, indent=4)
+    try:
+        with open(MAC_MAPPING_FILE, "w") as file:
+            json.dump(mac_mapping, file, indent=4)
+    except Exception as e:
+        print(f"⚠️ No se pudo guardar el mapeo MAC: {e}")
 
 # Obtener o asignar un node_id a una MAC
 def obtener_node_id(mac_address, mac_mapping):
@@ -37,56 +31,63 @@ def obtener_node_id(mac_address, mac_mapping):
     else:
         new_node_id = len(mac_mapping) + 1  # Generar un nuevo ID
         mac_mapping[mac_address] = new_node_id
-        guardar_mac_mapping(mac_mapping)
+        guardar_mac_mapping(mac_mapping)  # Guardar sin bloquear la lectura
         return new_node_id
 
 # Inicializar mapeo de MAC
 mac_mapping = cargar_mac_mapping()
 
-# Determinar qué puerto usar (simulación vs UART real)
-if es_modo_simulado():
-    puerto_serie = PUERTO_SIMULADOR
-    print("🟡 Modo SIMULADO detectado. Usando puerto virtual:", PUERTO_SIMULADOR)
-else:
-    # En una Raspberry Pi, usar el puerto real `/dev/serial0` o `/dev/ttyS0`
-    puerto_serie = PUERTO_REAL if os.path.exists(PUERTO_REAL) else "/dev/ttyS0"
-    print("🟢 Modo REAL detectado. Usando puerto UART:", puerto_serie)
+# Crear archivo CSV con encabezado si no existe
+if not os.path.exists(CSV_FILE):
+    with open(CSV_FILE, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["timestamp", "node_id", "temperature", "humidity", "pressure", "ext"])
+    print(f"✅ Archivo CSV creado: {CSV_FILE}")
 
-# Abrir UART y comenzar a leer datos
-try:
-    with serial.Serial(puerto_serie, BAUDRATE, timeout=1) as uart:
-        print(f"📡 Escuchando en {puerto_serie} para recibir datos...")
-        if not os.path.exists(CSV_FILE):
-            with open(CSV_FILE, "w") as file:
-                file.write("temperature,humidity,timestamp,node_id,pressure\n")
+# Monitorear el buffer y procesar datos en tiempo real
+print("🔍 Monitoreando buffer para capturar nuevas mediciones...")
 
-        while True:
-            # Leer una línea de datos desde UART
-            linea = uart.readline().decode("utf-8").strip()
-            if not linea:
-                continue
-
-            # Dividir los datos esperados: "MAC,TEMPERATURA,HUMEDAD,TIMESTAMP,PRESION"
+while True:
+    if os.path.exists(BUFFER_FILE):
+        with open(BUFFER_FILE, "r") as file:
             try:
-                temperature, humidity, mac_address, pressure = linea.split(",")
-                #timestamp = datetime.now().timestamp()
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                print(timestamp)
-                node_id = obtener_node_id(mac_address, mac_mapping)  # Asignar node_id según MAC
+                buffer_mediciones = json.load(file)
+            except json.JSONDecodeError:
+                buffer_mediciones = []
 
-                # Escribir en CSV
+        # Si hay datos en el buffer, procesarlos
+        if buffer_mediciones:
+            lectura = buffer_mediciones.pop(0)  # Sacar el primer elemento (FIFO)
+
+            try:
+                mac = lectura[0].split(": ")[1].strip()
+                temperature = float(lectura[1].split(": ")[1].strip())
+                humidity = float(lectura[2].split(": ")[1].strip())
+                pressure = float(lectura[3].split(": ")[1].strip())
+                ext = float(lectura[4].split(": ")[1].strip())
+
+                # Generar timestamp
+                timestamp = datetime.now().strftime("%H:%M:%S")
+
+                # Asignar node_id basado en la MAC
+                node_id = obtener_node_id(mac, mac_mapping)
+
+                # Guardar en formato de CSV
                 with open(CSV_FILE, mode="a", newline="") as file:
                     writer = csv.writer(file)
-                    writer.writerow([temperature, humidity, timestamp, node_id, pressure])
+                    writer.writerow([timestamp, node_id, temperature, humidity, pressure, ext])
 
-                print(f"✅ Datos guardados: node_id={node_id}, temp={temperature}, hum={humidity}, pres={pressure}, time={timestamp}")
+                print(f"✅ Medición guardada: {timestamp}, {node_id}, {temperature}, {humidity}, {pressure}, {ext}")
 
-            except ValueError:
-                print(f"⚠️ Formato incorrecto recibido: {linea}")
+                # **Forzar la actualización del buffer JSON**
+                with open(BUFFER_FILE, "w") as file:
+                    json.dump(buffer_mediciones, file, indent=4)
 
-            time.sleep(1)  # Pequeña espera para evitar saturación del puerto
+                time.sleep(0.5)  # Pequeña pausa para evitar sobrecarga
 
-except serial.SerialException as e:
-    print(f"❌ Error al abrir {puerto_serie}: {e}")
-except KeyboardInterrupt:
-    print("\n🛑 Se detectó interrupción. Cerrando el recolector...")
+            except Exception as e:
+                print(f"⚠️ Error al procesar una línea del buffer: {e}")
+
+    else:
+        print("⚠️ No se encontró el archivo de buffer. Esperando...")
+        time.sleep(1)  # Esperar si el archivo no existe
