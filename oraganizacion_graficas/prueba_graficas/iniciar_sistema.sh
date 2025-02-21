@@ -14,7 +14,7 @@ echo "📡 Iniciando recepción de datos por UART..."
 python "$UART_SCRIPT" &
 
 # Esperar unos segundos para asegurarse de que el CSV tiene datos antes de graficar
-sleep 3
+sleep 5
 
 # Ejecutar el script de actualización de gráficas (manteniéndolo en segundo plano)
 echo "📊 Iniciando actualización de gráficas..."

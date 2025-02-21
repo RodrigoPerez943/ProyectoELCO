@@ -8,7 +8,7 @@ PUERTO_SIMULADOR = "COM10"
 PUERTO_RECOLECTOR = "COM11"
 
 # Ruta de instalación de VSPE
-VSPE_EXE = r"C:\Program Files (x86)\Eterlogic.com\VSPE\vspe.exe"  # Ajusta la ruta si es diferente
+VSPE_EXE = r"C:/Program Files (x86)/Eterlogic.com/VSPE/vspe.exe"  # Ajusta la ruta si es diferente
 
 
 def verificar_puertos():

@@ -3,31 +3,54 @@ import time
 import random
 import serial
 import subprocess
-import serial.tools.list_ports
 
-# Configuración de los puertos virtuales
-PUERTO_SIMULADOR = "COM10"
-PUERTO_RECOLECTOR = "COM11"
+# Configuración de UART
+PUERTO_SIMULADOR = "COM10"  # Puerto de simulación en Windows (VSPE)
+PUERTO_REAL = "/dev/serial0"  # UART real en Raspberry Pi
 BAUDRATE = 9600
+
 
 # Obtener la ruta del directorio donde está este script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Archivo de bandera para indicar modo simulado
-SIM_FLAG = os.path.join(BASE_DIR, "sim_mode.flag")
 
 # Rutas de los scripts
 INICIAR_SCRIPT = os.path.join(BASE_DIR, "iniciar_sistema.sh")
 DETENER_SCRIPT = os.path.join(BASE_DIR, "archivar_y_detener.sh")
 SETUP_PUERTOS_SCRIPT = os.path.join(BASE_DIR, "setup_puertos_virtuales.py")
+SIM_FLAG = os.path.join(BASE_DIR, "sim_mode.flag")  # Se crea en el directorio de ejecución
 
 
-def verificar_puertos():
-    """ Verifica si los puertos COM10 y COM11 existen en el sistema. """
-    puertos = [port.device for port in serial.tools.list_ports.comports()]
-    return PUERTO_SIMULADOR in puertos and PUERTO_RECOLECTOR in puertos
+
+with open(SIM_FLAG, "w") as f:
+    f.write("SIMULATION MODE ACTIVE")
+
+print(f"✅ Archivo de simulación creado en: {SIM_FLAG}")
 
 
+
+# Determinar si estamos en simulación o en hardware real
+def es_modo_simulado():
+    return os.path.exists(SIM_FLAG)
+
+if es_modo_simulado():
+    puerto_serie = PUERTO_SIMULADOR
+    print("🟡 Modo SIMULADO detectado. Usando puerto virtual:", PUERTO_SIMULADOR)
+else:
+    # En una Raspberry Pi, usar el puerto real `/dev/serial0` o `/dev/ttyS0`
+    puerto_serie = PUERTO_REAL if os.path.exists(PUERTO_REAL) else "/dev/ttyS0"
+    print("🟢 Modo REAL detectado. Usando puerto UART:", puerto_serie)
+
+# Generar una dirección MAC aleatoria simulada
+def generar_mac_aleatoria():
+    """ Genera una dirección MAC aleatoria con el formato XX:XX:XX:XX:XX:XX """
+    return ":".join(f"{random.randint(0x00, 0xFF):02X}" for _ in range(6))
+
+# Determinar qué puerto usar (simulación vs UART real)
+
+# Asignar una dirección MAC simulada
+
+
+# Ejecutar `setup_puertos_virtuales.py` antes de iniciar la simulación
 def iniciar_puertos_virtuales():
     """ Ejecuta setup_puertos_virtuales.py para configurar los puertos en VSPE. """
     print("🔧 Verificando y creando puertos virtuales...")
@@ -38,31 +61,29 @@ def iniciar_puertos_virtuales():
     except subprocess.CalledProcessError as e:
         print(f"❌ Error al ejecutar {SETUP_PUERTOS_SCRIPT}: {e}")
 
-
+# Esperar a que los puertos COM sean detectados en el sistema
 def esperar_puertos():
-    """ Espera hasta que los puertos COM10 y COM11 sean detectados por el sistema. """
-    print("⏳ Esperando a que Windows registre los puertos COM10 y COM11...")
-    for _ in range(10):  # Espera hasta 10 intentos (aprox. 10 segundos)
-        if verificar_puertos():
-            print("✅ Puertos detectados correctamente.")
-            return True
-        time.sleep(1)
+    """ Espera hasta que los puertos sean detectados por el sistema. """
+    print("⏳ Esperando a que Windows registre los puertos virtuales...")
+    for _ in range(10):  # Espera hasta 10 intentos (~10 segundos)
+        try:
+            with serial.Serial(puerto_serie, BAUDRATE, timeout=1) as _:
+                print("✅ Puertos detectados correctamente.")
+                return True
+        except serial.SerialException:
+            time.sleep(1)
     print("❌ Los puertos no fueron detectados a tiempo.")
     return False
 
-
+# Iniciar el sistema
 def iniciar_sistema():
-    """ Inicia el sistema y el recolector de datos """
+    """ Inicia el sistema y los procesos necesarios """
     print("🚀 Iniciando sistema simulado...")
 
     # Ejecutar el script de inicialización
     subprocess.Popen(["bash", INICIAR_SCRIPT], cwd=BASE_DIR)
 
-    # Abrir recolector_uart.py en una nueva terminal de Windows
-    recolector_cmd = f'start cmd /k "python {os.path.join(BASE_DIR, "recolector_uart.py")} {PUERTO_RECOLECTOR}"'
-    subprocess.Popen(recolector_cmd, shell=True)
-
-
+# Detener el sistema
 def detener_sistema():
     """ Detiene el sistema y archiva los datos """
     print("🛑 Deteniendo el sistema y archivando datos...")
@@ -74,36 +95,36 @@ def detener_sistema():
         print("✅ Modo simulado desactivado.")
 
 
-# ✅ Ejecutar `setup_puertos_virtuales.py` antes de iniciar la simulación
-iniciar_puertos_virtuales()
 
 # ✅ Esperar a que los puertos virtuales estén listos
 if not esperar_puertos():
     print("❌ No se pudo continuar porque los puertos virtuales no fueron detectados.")
     exit(1)
 
-# ✅ Crear el archivo de bandera para indicar modo simulado
-with open(SIM_FLAG, "w") as f:
-    f.write("SIMULATION MODE ACTIVE")
 
-# ✅ Iniciar el sistema y los scripts necesarios
+mac_simulada = generar_mac_aleatoria()
+
+# ✅ Ejecutar `setup_puertos_virtuales.py` antes de iniciar la simulación
+iniciar_puertos_virtuales()
+
 iniciar_sistema()
 
 # ✅ Simulación de datos UART usando `pyserial`
 try:
-    with serial.Serial(PUERTO_SIMULADOR, BAUDRATE, timeout=1) as uart:
+    with serial.Serial(puerto_serie, BAUDRATE, timeout=1) as uart:
         while True:
             temperature = round(random.uniform(20, 30), 2)
             humidity = round(random.uniform(40, 60), 2)
             pressure = round(random.uniform(900, 1100), 2)
-            timestamp = int(time.time())
-            node_id = random.randint(1, 3)
 
-            medida = f"{temperature},{humidity},{timestamp},{node_id},{pressure}\n"
+
+            # 🔹 Enviar los datos en el orden correcto: temperatura, humedad, timestamp, MAC, presión
+            medida = f"{temperature},{humidity},{mac_simulada},{pressure}\n"
             uart.write(medida.encode())
 
             print(f"📡 Simulador UART: Enviando -> {medida.strip()}")
             time.sleep(5)
+
 except KeyboardInterrupt:
     print("\n🛑 Se detectó interrupción. Deteniendo el sistema...")
     detener_sistema()
