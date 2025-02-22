@@ -115,7 +115,7 @@ try:
                 ext = round(random.uniform(0, 10), 2)
                 uart.write(f"EXT: {ext}\n".encode())
                 print(f"📡 Simulador UART: Enviando -> EXT: {ext}")
-                time.sleep(0.01)
+                time.sleep(0.05)
 
             time.sleep(0.1)  # Pequeña espera entre envíos
 
