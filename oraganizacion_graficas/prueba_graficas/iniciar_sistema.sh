@@ -16,8 +16,8 @@ python "$ESCUCHAR_SCRIPT" &
 sleep 5
 
 # Ejecutar el script de recolección de datos (manteniéndolo en segundo plano)
-echo "📡 Iniciando recepción de datos por UART..."
-python "$UART_SCRIPT" &
+#echo "📡 Iniciando recepción de datos por UART..."
+#python "$UART_SCRIPT" &
 
 # Esperar unos segundos para asegurarse de que el CSV tiene datos antes de graficar
 sleep 5

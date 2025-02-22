@@ -30,42 +30,49 @@ def obtener_node_id(mac_address, mac_mapping):
         guardar_mac_mapping(mac_mapping)
         return new_node_id
 
-# Verificar que se pasó una medición como argumento
+# Verificar que se pasó un lote de mediciones como argumento
 if len(sys.argv) < 2:
     print("⚠️ No se recibió ninguna medición como argumento.")
     sys.exit(1)
 
-# Convertir el argumento JSON en lista
 try:
-    medicion = json.loads(sys.argv[1])
+    mediciones = json.loads(sys.argv[1])  # Convertir argumento JSON en lista
 except json.JSONDecodeError:
-    print("⚠️ Error al decodificar la medición recibida.")
+    print("⚠️ Error al decodificar las mediciones recibidas.")
     sys.exit(1)
 
 try:
-    # Extraer los datos de la medición
-    mac = medicion[0].split(": ")[1].strip()
-    temperature = float(medicion[1].split(": ")[1].strip())
-    humidity = float(medicion[2].split(": ")[1].strip())
-    pressure = float(medicion[3].split(": ")[1].strip())
-    ext = float(medicion[4].split(": ")[1].strip())
-
-    # Generar timestamp
-    timestamp = datetime.now().strftime("%H:%M:%S")
-
-    # Inicializar mapeo de MAC y asignar node_id
+    # Inicializar mapeo de MAC
     mac_mapping = cargar_mac_mapping()
-    node_id = obtener_node_id(mac, mac_mapping)
     file_exists = os.path.exists(CSV_FILE)
-    # Guardar en CSV
+
     with open(CSV_FILE, mode="a", newline="") as file:
         writer = csv.writer(file)
+
         if not file_exists:
             writer.writerow(["timestamp", "node_id", "temperature", "humidity", "pressure", "ext"])
 
-        writer.writerow([timestamp, node_id, temperature, humidity, pressure, ext])
+        for medicion in mediciones:
+            try:
+                mac = medicion[0].split(": ")[1].strip()
+                temperature = float(medicion[1].split(": ")[1].strip())
+                humidity = float(medicion[2].split(": ")[1].strip())
+                pressure = float(medicion[3].split(": ")[1].strip())
+                ext = float(medicion[4].split(": ")[1].strip())
 
-    print(f"✅ Medición guardada: {timestamp}, {node_id}, {temperature}, {humidity}, {pressure}, {ext}")
+                # Generar timestamp
+                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+
+                # Asignar node_id basado en la MAC
+                node_id = obtener_node_id(mac, mac_mapping)
+
+                # Guardar en CSV
+                writer.writerow([timestamp, node_id, temperature, humidity, pressure, ext])
+
+                print(f"✅ Medición guardada: {timestamp}, {node_id}, {temperature}, {humidity}, {pressure}, {ext}")
+
+            except Exception as e:
+                print(f"⚠️ Error al procesar una medición: {e}")
 
 except Exception as e:
-    print(f"⚠️ Error al procesar la medición: {e}")
+    print(f"⚠️ Error en el guardado de mediciones: {e}")
