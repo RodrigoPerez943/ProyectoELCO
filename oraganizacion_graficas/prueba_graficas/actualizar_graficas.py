@@ -12,7 +12,7 @@ PNG_DIR = "graficas_png"
 os.makedirs(MAT_DIR, exist_ok=True)
 os.makedirs(PNG_DIR, exist_ok=True)
 
-print("📊 Monitoreando el archivo CSV para actualizar las gráficas...")
+print("\U0001F4CA Monitoreando el archivo CSV para actualizar las gráficas...")
 
 # Estado previo del CSV
 last_timestamp = {}
@@ -21,7 +21,7 @@ while True:
     try:
         # Leer los datos actuales
         df = pd.read_csv(CSV_FILE)
-        #print(df["temperature"])
+
         if df.empty:
             print("⚠️ No hay datos en el archivo CSV. Esperando nuevas mediciones...")
             time.sleep(5)
@@ -32,6 +32,10 @@ while True:
 
         for node_id in nodos:
             data_node = df[df["node_id"] == node_id]
+
+            # Crear carpeta específica para el nodo
+            nodo_dir = os.path.join(PNG_DIR, f"nodo_{node_id}")
+            os.makedirs(nodo_dir, exist_ok=True)
 
             # Verificar si hay nuevas medidas comparando con el último timestamp guardado
             if node_id in last_timestamp and last_timestamp[node_id] >= data_node["timestamp"].max():
@@ -51,44 +55,26 @@ while True:
             sio.savemat(mat_filename, mat_data)
             print(f"✅ Datos actualizados en {mat_filename}")
 
-            # Crear figura para el nodo
-            fig, axes = plt.subplots(3, 1, figsize=(10, 6))
-
-            # Gráfica de temperatura
-            axes[0].plot(data_node["timestamp"], data_node["temperature"], 'bo-', label="Temperatura")
-            axes[0].set_ylabel("Temperatura (°C)")
-            axes[0].set_title(f"Temperatura del Nodo {node_id}")
-            axes[0].legend()
-
-            # Gráfica de humedad
-            axes[1].plot(data_node["timestamp"], data_node["humidity"], 'go-', label="Humedad")
-            axes[1].set_ylabel("Humedad (%)")
-            axes[1].set_title(f"Humedad del Nodo {node_id}")
-            axes[1].legend()
-
-            # Gráfica de presión
-            axes[2].plot(data_node["timestamp"], data_node["pressure"], 'ro-', label="Presión")
-            axes[2].set_ylabel("Presión (hPa)")
-            axes[2].set_title(f"Presión del Nodo {node_id}")
-            axes[2].legend()
-
-            # Configuración final
-            for ax in axes:
-                ax.set_xlabel("Tiempo")
-                ax.grid(True)
-
-            plt.tight_layout()
-
-            # Guardar imagen en PNG
-            png_filename = os.path.join(PNG_DIR, f"nodo_{node_id}.png")
-            plt.savefig(png_filename)
-            print(f"📷 Gráfica actualizada en {png_filename}")
-
-            plt.close()
+            # Crear y guardar gráficos individuales
+            for metric, color, ylabel in zip(["temperature", "humidity", "pressure"], ['b', 'g', 'r'],
+                                             ["Temperatura (°C)", "Humedad (%)", "Presión (hPa)"]):
+                plt.figure(figsize=(10, 5))
+                plt.plot(data_node["timestamp"], data_node[metric], f'{color}o-', label=ylabel)
+                plt.xlabel("Tiempo")
+                plt.ylabel(ylabel)
+                plt.title(f"{ylabel} del Nodo {node_id}")
+                plt.xticks(rotation=45)
+                plt.legend()
+                plt.grid(True)
+                
+                # Guardar la gráfica en la carpeta del nodo
+                plot_filename = os.path.join(nodo_dir, f"{metric}.png")
+                plt.savefig(plot_filename)
+                plt.close()
+                print(f"📷 Gráfica guardada: {plot_filename}")
 
     except Exception as e:
         print(f"⚠️ Error en la actualización de gráficas: {e}")
-
 
     time.sleep(5)  # Esperar 5 segundos antes de volver a leer el archivo
 

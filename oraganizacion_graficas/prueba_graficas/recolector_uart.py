@@ -1,11 +1,10 @@
 import os
 import csv
 import json
-import time
+import sys
 from datetime import datetime
 
 # Archivos
-BUFFER_FILE = "buffer_uart.json"
 CSV_FILE = "sensor_data.csv"
 MAC_MAPPING_FILE = "mac_mapping.json"
 
@@ -16,78 +15,57 @@ def cargar_mac_mapping():
             return json.load(file)
     return {}
 
-# Guardar asignaciones de MAC sin bloquear el programa
+# Guardar asignaciones de MAC
 def guardar_mac_mapping(mac_mapping):
-    try:
-        with open(MAC_MAPPING_FILE, "w") as file:
-            json.dump(mac_mapping, file, indent=4)
-    except Exception as e:
-        print(f"⚠️ No se pudo guardar el mapeo MAC: {e}")
+    with open(MAC_MAPPING_FILE, "w") as file:
+        json.dump(mac_mapping, file, indent=4)
 
 # Obtener o asignar un node_id a una MAC
 def obtener_node_id(mac_address, mac_mapping):
     if mac_address in mac_mapping:
         return mac_mapping[mac_address]
     else:
-        new_node_id = len(mac_mapping) + 1  # Generar un nuevo ID
+        new_node_id = len(mac_mapping) + 1
         mac_mapping[mac_address] = new_node_id
-        guardar_mac_mapping(mac_mapping)  # Guardar sin bloquear la lectura
+        guardar_mac_mapping(mac_mapping)
         return new_node_id
 
-# Inicializar mapeo de MAC
-mac_mapping = cargar_mac_mapping()
+# Verificar que se pasó una medición como argumento
+if len(sys.argv) < 2:
+    print("⚠️ No se recibió ninguna medición como argumento.")
+    sys.exit(1)
 
-# Crear archivo CSV con encabezado si no existe
-if not os.path.exists(CSV_FILE):
-    with open(CSV_FILE, "w", newline="") as file:
+# Convertir el argumento JSON en lista
+try:
+    medicion = json.loads(sys.argv[1])
+except json.JSONDecodeError:
+    print("⚠️ Error al decodificar la medición recibida.")
+    sys.exit(1)
+
+try:
+    # Extraer los datos de la medición
+    mac = medicion[0].split(": ")[1].strip()
+    temperature = float(medicion[1].split(": ")[1].strip())
+    humidity = float(medicion[2].split(": ")[1].strip())
+    pressure = float(medicion[3].split(": ")[1].strip())
+    ext = float(medicion[4].split(": ")[1].strip())
+
+    # Generar timestamp
+    timestamp = datetime.now().strftime("%H:%M:%S")
+
+    # Inicializar mapeo de MAC y asignar node_id
+    mac_mapping = cargar_mac_mapping()
+    node_id = obtener_node_id(mac, mac_mapping)
+    file_exists = os.path.exists(CSV_FILE)
+    # Guardar en CSV
+    with open(CSV_FILE, mode="a", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["timestamp", "node_id", "temperature", "humidity", "pressure", "ext"])
-    print(f"✅ Archivo CSV creado: {CSV_FILE}")
+        if not file_exists:
+            writer.writerow(["timestamp", "node_id", "temperature", "humidity", "pressure", "ext"])
 
-# Monitorear el buffer y procesar datos en tiempo real
-print("🔍 Monitoreando buffer para capturar nuevas mediciones...")
+        writer.writerow([timestamp, node_id, temperature, humidity, pressure, ext])
 
-while True:
-    if os.path.exists(BUFFER_FILE):
-        with open(BUFFER_FILE, "r") as file:
-            try:
-                buffer_mediciones = json.load(file)
-            except json.JSONDecodeError:
-                buffer_mediciones = []
+    print(f"✅ Medición guardada: {timestamp}, {node_id}, {temperature}, {humidity}, {pressure}, {ext}")
 
-        # Si hay datos en el buffer, procesarlos
-        if buffer_mediciones:
-            lectura = buffer_mediciones.pop(0)  # Sacar el primer elemento (FIFO)
-
-            try:
-                mac = lectura[0].split(": ")[1].strip()
-                temperature = float(lectura[1].split(": ")[1].strip())
-                humidity = float(lectura[2].split(": ")[1].strip())
-                pressure = float(lectura[3].split(": ")[1].strip())
-                ext = float(lectura[4].split(": ")[1].strip())
-
-                # Generar timestamp
-                timestamp = datetime.now().strftime("%H:%M:%S")
-
-                # Asignar node_id basado en la MAC
-                node_id = obtener_node_id(mac, mac_mapping)
-
-                # Guardar en formato de CSV
-                with open(CSV_FILE, mode="a", newline="") as file:
-                    writer = csv.writer(file)
-                    writer.writerow([timestamp, node_id, temperature, humidity, pressure, ext])
-
-                print(f"✅ Medición guardada: {timestamp}, {node_id}, {temperature}, {humidity}, {pressure}, {ext}")
-
-                # **Forzar la actualización del buffer JSON**
-                with open(BUFFER_FILE, "w") as file:
-                    json.dump(buffer_mediciones, file, indent=4)
-
-                time.sleep(0.5)  # Pequeña pausa para evitar sobrecarga
-
-            except Exception as e:
-                print(f"⚠️ Error al procesar una línea del buffer: {e}")
-
-    else:
-        print("⚠️ No se encontró el archivo de buffer. Esperando...")
-        time.sleep(1)  # Esperar si el archivo no existe
+except Exception as e:
+    print(f"⚠️ Error al procesar la medición: {e}")
