@@ -1,44 +1,65 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import scipy.io as sio
+import time
 
 CSV_FILE = "sensor_data.csv"
+MAT_DIR = "graficas_mat"
+PNG_DIR = "graficas_png"
 
-print("📊 Graficando datos pendientes...")
+# Crear carpetas si no existen
+os.makedirs(MAT_DIR, exist_ok=True)
+os.makedirs(PNG_DIR, exist_ok=True)
 
+print("📊 Procesando las gráficas pendientes...")
+
+# Leer el CSV
 try:
-    if os.path.exists(CSV_FILE):
-        df = pd.read_csv(CSV_FILE)
+    df = pd.read_csv(CSV_FILE)
+    if df.empty:
+        print("⚠️ No hay datos en el archivo CSV.")
+        exit()
 
-        if df.empty:
-            print("✅ No hay datos pendientes para graficar.")
-        else:
-            nodos = df["node_id"].unique()
+    # Obtener nodos únicos
+    nodos = df["node_id"].unique()
 
-            for nodo in nodos:
-                datos_nodo = df[df["node_id"] == nodo]
+    for node_id in nodos:
+        data_node = df[df["node_id"] == node_id]
 
-                plt.figure(figsize=(10, 5))
-                plt.plot(datos_nodo["timestamp"], datos_nodo["temperature"], label="Temperatura")
-                plt.plot(datos_nodo["timestamp"], datos_nodo["humidity"], label="Humedad")
-                plt.plot(datos_nodo["timestamp"], datos_nodo["pressure"], label="Presión")
-                plt.xlabel("Tiempo")
-                plt.ylabel("Valores")
-                plt.title(f"Datos del Nodo {nodo}")
-                plt.legend()
-                plt.xticks(rotation=45)
-                plt.grid()
-                plt.tight_layout()
-                plt.savefig(f"graficas_png/nodo_{nodo}.png")
-                plt.close()
+        # Guardar datos en formato .mat
+        mat_data = {
+            "timestamp": data_node["timestamp"].values,
+            "temperature": data_node["temperature"].values,
+            "humidity": data_node["humidity"].values,
+            "pressure": data_node["pressure"].values,
+        }
+        mat_filename = os.path.join(MAT_DIR, f"nodo_{node_id}.mat")
+        sio.savemat(mat_filename, mat_data)
+        print(f"✅ Datos actualizados en {mat_filename}")
 
-                print(f"✅ Gráfica actualizada para nodo {nodo}.")
+        # Generar tres gráficas por nodo
+        node_folder = os.path.join(PNG_DIR, f"nodo_{node_id}")
+        os.makedirs(node_folder, exist_ok=True)
 
-            print("✅ Todas las gráficas han sido actualizadas correctamente.")
+        for variable, color in zip(["temperature", "humidity", "pressure"], ['b', 'g', 'r']):
+            plt.figure(figsize=(10, 4))
+            plt.plot(data_node["timestamp"], data_node[variable], f'{color}o-', label=variable.capitalize())
+            plt.xlabel("Tiempo")
+            plt.ylabel("Valor")
+            plt.title(f"{variable.capitalize()} del Nodo {node_id}")
+            plt.legend()
+            plt.grid(True)
 
-    else:
-        print("⚠️ No se encontró el archivo CSV.")
+            # Guardar la gráfica
+            filename = os.path.join(node_folder, f"{variable}.png")
+            plt.savefig(filename)
+            print(f"📷 Gráfica de {variable} guardada en {filename}")
 
-except KeyboardInterrupt:
-    print("\n🛑 Interrupción detectada. Cerrando el proceso de graficado.")
-    plt.close('all')
+            plt.close()
+
+    print("✅ Todas las gráficas han sido generadas correctamente.")
+
+except Exception as e:
+    print(f"⚠️ Error al procesar las gráficas: {e}")
+
