@@ -70,7 +70,7 @@ while True:
             plt.xticks(rotation=45)
             plt.legend()
             plt.tight_layout()
-            plt.savefig(os.path.join(png_dir, "temperatura.png"))
+            plt.savefig(os.path.join(png_dir, "temperatura_base.png"))
             plt.close()
             print(f"📷 Gráfica de temperatura guardada en {png_dir}/temperatura.png")
 
@@ -84,7 +84,7 @@ while True:
             plt.xticks(rotation=45)
             plt.legend()
             plt.tight_layout()
-            plt.savefig(os.path.join(png_dir, "humedad.png"))
+            plt.savefig(os.path.join(png_dir, "humedad_base.png"))
             plt.close()
             print(f"📷 Gráfica de humedad guardada en {png_dir}/humedad.png")
 
@@ -98,7 +98,7 @@ while True:
             plt.xticks(rotation=45)
             plt.legend()
             plt.tight_layout()
-            plt.savefig(os.path.join(png_dir, "presion.png"))
+            plt.savefig(os.path.join(png_dir, "presion_base.png"))
             plt.close()
             print(f"📷 Gráfica de presión guardada en {png_dir}/presion.png")
 

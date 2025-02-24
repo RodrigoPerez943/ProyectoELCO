@@ -117,7 +117,7 @@ try:
                 print(f"📡 Simulador UART: Enviando -> EXT: {ext}")
                 time.sleep(0.05)
 
-            time.sleep(0.1)  # Pequeña espera entre envíos
+            time.sleep(5)  # Pequeña espera entre envíos
 
 except KeyboardInterrupt:
     print("\n🛑 Se detectó interrupción. Deteniendo el sistema...")
