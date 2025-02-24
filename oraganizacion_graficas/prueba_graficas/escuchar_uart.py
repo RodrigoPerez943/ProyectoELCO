@@ -72,6 +72,12 @@ try:
                 print(mediciones_queue)
                 llamar_recolector_uart()
 
+            # Después de procesar el lote, verificar si la cola se vació
+            if not mediciones_queue:
+                print("✅ Cola en memoria vacía después de procesar el lote.")
+            else:
+                print(f"⚠️ Aún quedan {len(mediciones_queue)} mediciones en la cola.")
+
             time.sleep(0.1)
 
 except serial.SerialException as e:

@@ -64,6 +64,10 @@ done
 
 echo "✅ Se han eliminado las versiones antiguas de las gráficas."
 
+# Eliminar los archivos base generados por `actualizar_graficas.py`
+echo "🗑️ Eliminando archivos base generados por actualizar_graficas..."
+find "$BACKUP_DIR/graficas_png" -type f -name "*_base.png" -exec rm {} \;
+
 # **Eliminar el CSV solo después de archivar**
 if [ -f "$CSV_FILE" ]; then
     rm -f "$CSV_FILE"
