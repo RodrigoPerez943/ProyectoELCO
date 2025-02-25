@@ -1,89 +1,78 @@
 import os
-import json
-import serial
 import time
+import serial
 import subprocess
+import platform
+import json
+import datetime
 from collections import deque
-from datetime import datetime
 
-# Configuración de UART
-PUERTO_SIMULADOR = "COM11"  # Puerto de simulación en Windows (VSPE)
-PUERTO_REAL = "/dev/serial0"  # UART real en Raspberry Pi
+# Configuración UART
+PUERTO_SERIE = "COM11"  # Cambia esto según el sistema
 BAUDRATE = 9600
-BUFFER_FILE = "buffer_uart.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BUFFER_FILE =os.path.join(BASE_DIR, "buffer_uart.json")   # Archivo para almacenar datos pendientes
 
-# Tamaño máximo del lote antes de llamar al recolector
-LOTE_MAXIMO = 5
+# Tamaño de la memoria y lote de procesamiento
+TAMANO_MEMORIA = 20
+TAMANO_LOTE = 5
+cola_mediciones = deque(maxlen=TAMANO_MEMORIA)
 
-# Determinar si estamos en simulación o en hardware real
-SIM_FLAG = os.path.join(os.getcwd(), "sim_mode.flag")
+# Detección del sistema operativo para usar Python adecuado
+sistema_operativo = platform.system()
 
-def es_modo_simulado():
-    return os.path.exists(SIM_FLAG)
+RECOLECTOR_SCRIPT = os.path.join(BASE_DIR, "recolector_uart.py")
+COMANDO_PROCESAR = ["python", RECOLECTOR_SCRIPT] if sistema_operativo != "Windows" else ["python", RECOLECTOR_SCRIPT]
 
-# Selección de puerto según el modo
-puerto_serie = PUERTO_SIMULADOR if es_modo_simulado() else PUERTO_REAL
+def enviar_a_recolector():
+    """ Envía las mediciones a recolector_uart cuando se alcanza el tamaño del lote """
+    if len(cola_mediciones) >= TAMANO_LOTE:
+        print(f"🚀 Enviando {len(cola_mediciones)} mediciones a recolector_uart.py")
 
-# Cola en memoria para almacenar las mediciones temporalmente
-mediciones_queue = deque()
-
-def llamar_recolector_uart():
-    """ Llama a recolector_uart.py para procesar datos """
-    print(f"🚀 Llamando a recolector_uart.py con {len(mediciones_queue)} mediciones completas")
-
-    while len(mediciones_queue) >= LOTE_MAXIMO:
-        lote = [mediciones_queue.popleft() for _ in range(LOTE_MAXIMO)]
-
-        # Guardar lote en buffer para que recolector lo procese
+        # Guardar las mediciones en buffer
         with open(BUFFER_FILE, "w") as file:
-            json.dump(lote, file, indent=4)
+            json.dump(list(cola_mediciones), file, indent=4)
 
-        # Llamar a recolector_uart.py para procesar este lote
-        subprocess.run(["python", "recolector_uart.py"])
+        # Llamar a recolector_uart.py para procesar los datos
+        subprocess.run(COMANDO_PROCESAR)
+
+        # Vaciar la cola en memoria después de enviarla
+        cola_mediciones.clear()
 
 try:
-    with serial.Serial(puerto_serie, BAUDRATE, timeout=1) as uart:
-        print(f"📡 Escuchando en {puerto_serie} para recibir datos...")
-
-        medicion_actual = []
-        timestamp = None  # Timestamp de la medición
+    with serial.Serial(PUERTO_SERIE, BAUDRATE, timeout=1) as uart:
+        print(f"📡 Escuchando UART en {PUERTO_SERIE}...")
 
         while True:
-            # Leer una línea de datos desde UART
-            linea = uart.readline().decode("utf-8").strip()
-            if not linea:
-                continue
+            try:
+                datos = uart.readline().decode(errors="ignore").strip()
+                timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]  # Milisegundos  # Leer línea completa
+                if not datos:
+                    continue  # Si no hay datos, continuar
 
-            # Si es la primera línea (MAC), capturamos el timestamp
-            if "MAC: " in linea:
-                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+                print(f"📡 Recibido -> {datos}")
 
-            # Guardar la línea con su timestamp
-            medicion_actual.append(f"{timestamp}, {linea}")
+                # Separar valores
+                partes = datos.split(",")
+                if len(partes) != 5:
+                    print(f"⚠️ Formato incorrecto recibido: {datos} (Esperados: 5, Recibidos: {len(partes)})")
+                    continue
 
-            # Una medición completa son 5 líneas
-            if len(medicion_actual) == 5:
-                mediciones_queue.append(medicion_actual)
-                print(f"✅ Nueva medición almacenada: {medicion_actual}")
-                medicion_actual = []
+                # Obtener timestamp en el momento exacto de la recepción
+                
 
-            # Si hay muchas mediciones, hacer múltiples llamadas a recolector_uart.py
-            if len(mediciones_queue) >= LOTE_MAXIMO:
-                print(mediciones_queue)
-                llamar_recolector_uart()
+                # Agregar la medición a la cola en memoria
+                medicion = [timestamp] + [p.strip() for p in partes]
+                cola_mediciones.append(medicion)
+                print(f"📥 Medición añadida: {len(cola_mediciones)} en memoria / {TAMANO_MEMORIA}")
 
-            # Después de procesar el lote, verificar si la cola se vació
-            if not mediciones_queue:
-                print("✅ Cola en memoria vacía después de procesar el lote.")
-            else:
-                print(f"⚠️ Aún quedan {len(mediciones_queue)} mediciones en la cola.")
+                # Si se alcanza el tamaño del lote, enviar a recolector
+                enviar_a_recolector()
 
-            time.sleep(0.1)
+            except Exception as e:
+                print(f"⚠️ Error en la lectura de UART: {e}")
+
+            time.sleep(0.05)  # Pequeña espera para evitar sobrecarga
 
 except serial.SerialException as e:
-    print(f"❌ Error al abrir {puerto_serie}: {e}")
-
-except KeyboardInterrupt:
-    print("\n🛑 Se detectó interrupción. Guardando mediciones pendientes y cerrando...")
-    llamar_recolector_uart()
-    print("🔚 Escucha de UART detenida.")
+    print(f"❌ Error al abrir UART: {e}")

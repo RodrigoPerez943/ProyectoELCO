@@ -2,10 +2,13 @@ import os
 import csv
 import json
 
-# Archivos
-BUFFER_FILE = "buffer_uart.json"
-CSV_FILE = "sensor_data.csv"
-MAC_MAPPING_FILE = "mac_mapping.json"
+# Obtener la ruta absoluta del directorio donde se ejecuta el script
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+
+# Definir rutas absolutas de los archivos en el mismo directorio del script
+BUFFER_FILE = os.path.join(BASE_DIR, "buffer_uart.json")
+CSV_FILE = os.path.join(BASE_DIR, "sensor_data.csv")
+MAC_MAPPING_FILE = os.path.join(BASE_DIR, "mac_mapping.json")
 
 # Cargar asignaciones de MAC si existen
 def cargar_mac_mapping():
@@ -37,7 +40,7 @@ if not os.path.exists(CSV_FILE):
     with open(CSV_FILE, "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(["timestamp", "node_id", "temperature", "humidity", "pressure", "ext"])
-    print(f"✅ Archivo CSV creado: {CSV_FILE}")
+    print(f"✅ Archivo CSV creado en: {CSV_FILE}")
 
 def procesar_mediciones():
     """ Procesa todas las mediciones en el buffer """
@@ -59,11 +62,13 @@ def procesar_mediciones():
     for medicion in mediciones:
         try:
             # Extraer valores en el orden correcto
-            timestamp, mac = medicion[0].split(", ")  # Extraer timestamp y MAC
-            temperature = float(medicion[1].split(": ")[1].strip())
-            humidity = float(medicion[2].split(": ")[1].strip())
-            pressure = float(medicion[3].split(": ")[1].strip())
-            ext = float(medicion[4].split(": ")[1].strip())
+            timestamp, mac, temperature, humidity, pressure, ext = medicion
+
+            # Convertir valores numéricos
+            temperature = float(temperature)
+            humidity = float(humidity)
+            pressure = float(pressure)
+            ext = float(ext)
 
             # Asignar node_id basado en la MAC
             node_id = obtener_node_id(mac, mac_mapping)
