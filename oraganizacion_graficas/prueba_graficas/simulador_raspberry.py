@@ -13,7 +13,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Rutas de los scripts
 INICIAR_SCRIPT = os.path.join(BASE_DIR, "iniciar_sistema.sh")
-DETENER_SCRIPT = os.path.join(BASE_DIR, "archivar_y_detener.sh")
+DETENER_SCRIPT = os.path.join(BASE_DIR, "archivar_y_detener.py")
 SETUP_PUERTOS_SCRIPT = os.path.join(BASE_DIR, "setup_puertos_virtuales.py")
 SIM_FLAG = os.path.join(BASE_DIR, "sim_mode.flag")  # Archivo de control
 
@@ -66,7 +66,7 @@ def iniciar_sistema():
 def detener_sistema():
     """ Detiene el sistema y archiva los datos """
     print("🛑 Deteniendo el sistema y archivando datos...")
-    subprocess.run(["bash", DETENER_SCRIPT], cwd=BASE_DIR, check=True)
+    subprocess.run(["python", DETENER_SCRIPT])
 
     # Eliminar el archivo de bandera de simulación
     if os.path.exists(SIM_FLAG):
@@ -83,7 +83,7 @@ if not esperar_puertos():
 
 # ✅ Iniciar el sistema y los scripts necesarios
 iniciar_sistema()
-
+time.sleep(5)
 # ✅ Simulación de datos UART enviando hasta 4 sensores simultáneamente
 try:
     with serial.Serial(PUERTO_SERIE, BAUDRATE, timeout=1) as uart:
