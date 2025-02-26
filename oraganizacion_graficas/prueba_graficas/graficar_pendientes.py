@@ -2,47 +2,63 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-CSV_FILE = "sensor_data.csv"
-PNG_DIR = "graficas_png"
+# Directorios y archivos clave
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CSV_FILE = os.path.join(BASE_DIR, "sensor_data.csv")
+PNG_DIR = os.path.join(BASE_DIR, "graficas_png")
 
-# Crear carpeta si no existe
+# Crear carpeta de imágenes si no existe
 os.makedirs(PNG_DIR, exist_ok=True)
 
-print("📊 Graficando datos pendientes...")
+def graficar_pendientes():
+    """ Genera gráficas con los datos pendientes antes de cerrar el sistema """
+    if not os.path.exists(CSV_FILE):
+        print("⚠️ No hay datos en el CSV para graficar.")
+        return
 
-# Leer el CSV
-df = pd.read_csv(CSV_FILE)
+    try:
+        df = pd.read_csv(CSV_FILE)
 
-if df.empty:
-    print("⚠️ No hay datos pendientes en el CSV.")
-    exit(0)
+        if df.empty:
+            print("⚠️ No hay datos en el CSV.")
+            return
 
-# Obtener nodos únicos
-nodos = df["node_id"].unique()
-
-for node_id in nodos:
-    data_node = df[df["node_id"] == node_id]
-
-    # Diccionario para las gráficas
-    medidas = {"temperature": "Temperatura (°C)", "humidity": "Humedad (%)", "pressure": "Presión (hPa)"}
-
-    for key, label in medidas.items():
-        plt.figure(figsize=(10, 5))
-        plt.plot(data_node["timestamp"], data_node[key], 'bo-', linestyle="dashed", label=f"{label} (Actualizado)")
+        # Graficar temperatura
+        plt.figure(figsize=(8, 4))
+        for node_id in df["node_id"].unique():
+            data_node = df[df["node_id"] == node_id]
+            plt.plot(data_node["timestamp"], data_node["temperature"], marker="o", label=f"Nodo {node_id}")
 
         plt.xlabel("Tiempo")
-        plt.ylabel(label)
-        plt.title(f"{label} del Nodo {node_id}")
+        plt.ylabel("Temperatura (°C)")
+        plt.title("Temperatura de los nodos")
         plt.legend()
+        plt.grid()
         plt.xticks(rotation=45)
-        plt.grid(True)
-
-        # Guardar la gráfica
-        file_path = os.path.join(PNG_DIR, f"nodo_{node_id}/{key}.png")
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        plt.savefig(file_path)
+        plt.tight_layout()
+        plt.savefig(os.path.join(PNG_DIR, "temperatura_final.png"))
         plt.close()
+        print(f"📷 Gráfica de temperatura actualizada en {PNG_DIR}/temperatura_final.png")
 
-        print(f"✅ Gráfica de {label} guardada en {file_path}")
+        # Graficar humedad
+        plt.figure(figsize=(8, 4))
+        for node_id in df["node_id"].unique():
+            data_node = df[df["node_id"] == node_id]
+            plt.plot(data_node["timestamp"], data_node["humidity"], marker="s", label=f"Nodo {node_id}")
 
-print("📊 Todas las gráficas pendientes han sido generadas correctamente.")
+        plt.xlabel("Tiempo")
+        plt.ylabel("Humedad (%)")
+        plt.title("Humedad de los nodos")
+        plt.legend()
+        plt.grid()
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(PNG_DIR, "humedad_final.png"))
+        plt.close()
+        print(f"📷 Gráfica de humedad actualizada en {PNG_DIR}/humedad_final.png")
+
+    except Exception as e:
+        print(f"⚠️ Error al graficar datos pendientes: {e}")
+
+if __name__ == "__main__":
+    graficar_pendientes()
