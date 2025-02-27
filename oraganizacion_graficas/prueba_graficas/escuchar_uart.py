@@ -9,6 +9,7 @@ from collections import deque
 
 # Configuración UART
 PUERTO_SERIE = "COM11"  # Cambia esto según el sistema
+#PUERTO_SERIE = /dev/serial0
 BAUDRATE = 9600
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BUFFER_FILE =os.path.join(BASE_DIR, "buffer_uart.json")   # Archivo para almacenar datos pendientes
