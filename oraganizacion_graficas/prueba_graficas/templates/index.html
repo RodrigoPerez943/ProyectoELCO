@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Nodos</title>
+</head>
+<body>
+    <h1>Lista de Nodos</h1>
+    <ul>
+        {% for nodo in nodos %}
+            <li><a href="/graficas/{{ nodo }}">{{ nodo }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

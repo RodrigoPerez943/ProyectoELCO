@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráfica del Nodo {{ nodo_id }}</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Gráfica del Nodo {{ nodo_id }}</h1>
+    <div id="graph"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch(`/nodo/{{ nodo_id }}/datos`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById("graph").innerText = "Error: " + data.error;
+                        return;
+                    }
+
+                    var timestamps = data.map(d => d.timestamp);
+                    var temperatures = data.map(d => d.temperature);
+                    
+                    var trace = {
+                        x: timestamps,
+                        y: temperatures,
+                        mode: 'lines+markers',
+                        type: 'scatter',
+                        name: 'Temperatura'
+                    };
+
+                    var layout = {
+                        title: 'Temperatura del Nodo {{ nodo_id }}',
+                        xaxis: { title: 'Hora del día (HH:MM:SS.μs)' },
+                        yaxis: { title: 'Temperatura (°C)' }
+                    };
+
+                    Plotly.newPlot('graph', [trace], layout);
+                })
+                .catch(error => console.error('Error al cargar los datos:', error));
+        });
+    </script>
+</body>
+</html>

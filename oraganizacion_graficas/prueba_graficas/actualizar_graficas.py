@@ -1,213 +1,10 @@
-#OPCION 1: MATPLOTLIB no interactivo
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# import os
-# import scipy.io as sio
-# import time
-# import matplotlib.dates as mdates
 
-# # **Directorios base**
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# CSV_FILE = os.path.join(BASE_DIR, "sensor_data.csv")
-# MAT_DIR = os.path.join(BASE_DIR, "graficas_mat")
-# PNG_DIR = os.path.join(BASE_DIR, "graficas_png")
-
-# # **Crear carpetas base si no existen**
-# os.makedirs(MAT_DIR, exist_ok=True)
-# os.makedirs(PNG_DIR, exist_ok=True)
-
-# print("📊 Monitoreando `sensor_data.csv` para actualizar gráficas...")
-
-# while True:
-#     try:
-#         # **Verificar si el archivo `sensor_data.csv` existe y tiene datos**
-#         if not os.path.exists(CSV_FILE) or os.path.getsize(CSV_FILE) == 0:
-#             print("⚠️ No hay datos en `sensor_data.csv`. Esperando...")
-#             time.sleep(5)
-#             continue
-
-#         df = pd.read_csv(CSV_FILE)
-
-#         if df.empty:
-#             print("⚠️ `sensor_data.csv` está vacío. Esperando nuevas mediciones...")
-#             time.sleep(5)
-#             continue
-
-#         # **Convertir timestamps a formato datetime con microsegundos**
-#         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", format="%H:%M:%S.%f")
-#         df = df.dropna(subset=["timestamp"])  # Asegurar que no haya timestamps inválidos
-
-#         # **Obtener nodos únicos**
-#         nodos = df["node_id"].unique()
-
-#         for node_id in nodos:
-#             data_node = df[df["node_id"] == node_id]
-
-#             # **Verificar si hay datos**
-#             if data_node.empty:
-#                 print(f"⚠️ No hay datos para el Nodo {node_id}, saltando...")
-#                 continue
-
-#             print(f"📊 Datos disponibles para Nodo {node_id}:")
-#             print(data_node[["timestamp", "temperature", "humidity", "pressure"]])
-
-#             # **Definir ruta de almacenamiento**
-#             node_dir = os.path.join(MAT_DIR, f"nodo_{node_id}")
-#             os.makedirs(node_dir, exist_ok=True)
-
-#             png_dir = os.path.join(PNG_DIR, f"nodo_{node_id}")
-#             os.makedirs(png_dir, exist_ok=True)
-
-#             mat_filename = os.path.join(node_dir, f"nodo_{node_id}.mat")
-
-#             # **Guardar datos en formato `.mat`**
-#             mat_data = {
-#                 "timestamp": data_node["timestamp"].dt.strftime("%H:%M:%S.%f").values,
-#                 "temperature": data_node["temperature"].values,
-#                 "humidity": data_node["humidity"].values,
-#                 "pressure": data_node["pressure"].values,
-#             }
-#             sio.savemat(mat_filename, mat_data)
-#             print(f"✅ Datos actualizados en {mat_filename}")
-
-#             # **Graficar datos acumulados**
-#             medidas = {
-#                 "temperature": ("Temperatura", "°C", 'bo-', "temperatura.png"),
-#                 "humidity": ("Humedad", "%", 'go-', "humedad.png"),
-#                 "pressure": ("Presión", "hPa", 'ro-', "presion.png"),
-#             }
-
-#             for key, (titulo, unidad, color, archivo) in medidas.items():
-#                 archivo_png = os.path.join(png_dir, archivo)
-
-#                 # **Ordenar datos por timestamp**
-#                 ordenado = data_node[["timestamp", key]].drop_duplicates().sort_values("timestamp")
-
-#                 fig, ax = plt.subplots(figsize=(10, 5))
-
-#                 # **Formato de tiempo en el eje X**
-#                 ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-#                 ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=2))  # Divisiones cada 2 minutos
-
-#                 plt.xticks(rotation=45)
-
-#                 # **Graficar**
-#                 plt.plot(ordenado["timestamp"], ordenado[key], color, marker="o", label=f"{titulo} del Nodo {node_id}")
-
-#                 plt.xlabel("Hora del día (HH:MM)")
-#                 plt.ylabel(f"{titulo} ({unidad})")
-#                 plt.title(f"{titulo} del Nodo {node_id}")
-#                 plt.grid(True)
-#                 plt.legend()
-#                 plt.tight_layout()
-#                 plt.savefig(archivo_png)
-#                 plt.close()
-#                 print(f"📷 Gráfica de {titulo} actualizada en {archivo_png}")
-
-#     except Exception as e:
-#         print(f"⚠️ Error en la actualización de gráficas: {e}")
-
-#     time.sleep(5)
-
-
-#OPCION 2: motploylib interctivo
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# import os
-# import scipy.io as sio
-# import time
-# import matplotlib.dates as mdates
-
-# # **Directorios base**
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# CSV_FILE = os.path.join(BASE_DIR, "sensor_data.csv")  # Archivo con datos
-# MAT_DIR = os.path.join(BASE_DIR, "graficas_mat")  # Carpeta para archivos .mat
-# PNG_DIR = os.path.join(BASE_DIR, "graficas_png")  # Carpeta para imágenes de gráficas
-
-# # **Crear carpetas si no existen**
-# os.makedirs(MAT_DIR, exist_ok=True)
-# os.makedirs(PNG_DIR, exist_ok=True)
-
-# plt.ion()  # Modo interactivo de Matplotlib
-# fig, ax = plt.subplots(figsize=(10, 5))
-
-# print("📊 Iniciando actualización en tiempo real...")
-
-# while True:
-#     try:
-#         if not os.path.exists(CSV_FILE) or os.path.getsize(CSV_FILE) == 0:
-#             print("⚠️ No hay datos en el CSV. Esperando...")
-#             time.sleep(5)
-#             continue
-
-#         df = pd.read_csv(CSV_FILE)
-
-#         if df.empty:
-#             print("⚠️ `sensor_data.csv` está vacío. Esperando nuevas mediciones...")
-#             time.sleep(5)
-#             continue
-
-#         # **Convertir timestamps a formato datetime**
-#         df["timestamp"] = pd.to_datetime(df["timestamp"], format="%H:%M:%S.%f", errors='coerce')
-#         df = df.dropna(subset=["timestamp"])
-
-#         # **Obtener nodos únicos**
-#         nodos = df["node_id"].unique()
-
-#         for node_id in nodos:
-#             data_node = df[df["node_id"] == node_id]
-
-#             if data_node.empty:
-#                 continue
-
-#             # **Guardar datos en `.mat`**
-#             node_dir = os.path.join(MAT_DIR, f"nodo_{node_id}")
-#             os.makedirs(node_dir, exist_ok=True)
-#             mat_filename = os.path.join(node_dir, f"nodo_{node_id}.mat")
-
-#             mat_data = {
-#                 "timestamp": data_node["timestamp"].dt.strftime("%H:%M:%S.%f").values,
-#                 "temperature": data_node["temperature"].values,
-#                 "humidity": data_node["humidity"].values,
-#                 "pressure": data_node["pressure"].values,
-#             }
-#             sio.savemat(mat_filename, mat_data)
-#             print(f"✅ Datos actualizados en {mat_filename}")
-
-#             # **Graficar y actualizar en tiempo real**
-#             ax.clear()
-#             ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-#             ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=2))
-
-#             ax.plot(data_node["timestamp"], data_node["temperature"], 'bo-', label=f"Temperatura Nodo {node_id}")
-#             ax.set_xlabel("Hora del día (HH:MM)")
-#             ax.set_ylabel("Temperatura (°C)")
-#             ax.set_title(f"Temperatura del Nodo {node_id}")
-#             ax.grid(True)
-#             ax.legend()
-#             plt.xticks(rotation=45)
-
-#             plt.draw()
-#             plt.pause(5)
-
-#             # **Guardar gráfica en `.png`**
-#             png_dir = os.path.join(PNG_DIR, f"nodo_{node_id}")
-#             os.makedirs(png_dir, exist_ok=True)
-#             archivo_png = os.path.join(png_dir, "temperatura.png")
-#             plt.savefig(archivo_png)
-#             print(f"📷 Gráfica guardada en {archivo_png}")
-
-#     except Exception as e:
-#         print(f"⚠️ Error en la actualización de gráficas: {e}")
-
-#     time.sleep(5)  # Esperar antes de volver a graficar
-
-#OPCION 3: plotly dinamico web
 import pandas as pd
-import plotly.express as px
+import matplotlib.pyplot as plt
 import os
 import scipy.io as sio
 import time
+import matplotlib.dates as mdates
 
 # **Directorios base**
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -215,16 +12,17 @@ CSV_FILE = os.path.join(BASE_DIR, "sensor_data.csv")
 MAT_DIR = os.path.join(BASE_DIR, "graficas_mat")
 PNG_DIR = os.path.join(BASE_DIR, "graficas_png")
 
-# **Crear carpetas si no existen**
+# **Crear carpetas base si no existen**
 os.makedirs(MAT_DIR, exist_ok=True)
 os.makedirs(PNG_DIR, exist_ok=True)
 
-print("📊 Iniciando actualización con gráficos interactivos...")
+print("📊 Monitoreando `sensor_data.csv` para actualizar gráficas...")
 
 while True:
     try:
+        # **Verificar si el archivo `sensor_data.csv` existe y tiene datos**
         if not os.path.exists(CSV_FILE) or os.path.getsize(CSV_FILE) == 0:
-            print("⚠️ No hay datos en el CSV. Esperando...")
+            print("⚠️ No hay datos en `sensor_data.csv`. Esperando...")
             time.sleep(5)
             continue
 
@@ -235,9 +33,9 @@ while True:
             time.sleep(5)
             continue
 
-        # **Convertir timestamps a formato datetime**
-        df["timestamp"] = pd.to_datetime(df["timestamp"], format="%H:%M:%S.%f", errors='coerce')
-        df = df.dropna(subset=["timestamp"])
+        # **Convertir timestamps a formato datetime con microsegundos**
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", format="%H:%M:%S.%f")
+        df = df.dropna(subset=["timestamp"])  # Asegurar que no haya timestamps inválidos
 
         # **Obtener nodos únicos**
         nodos = df["node_id"].unique()
@@ -245,14 +43,24 @@ while True:
         for node_id in nodos:
             data_node = df[df["node_id"] == node_id]
 
+            # **Verificar si hay datos**
             if data_node.empty:
+                print(f"⚠️ No hay datos para el Nodo {node_id}, saltando...")
                 continue
 
-            # **Guardar datos en `.mat`**
+            print(f"📊 Datos disponibles para Nodo {node_id}:")
+            print(data_node[["timestamp", "temperature", "humidity", "pressure"]])
+
+            # **Definir ruta de almacenamiento**
             node_dir = os.path.join(MAT_DIR, f"nodo_{node_id}")
             os.makedirs(node_dir, exist_ok=True)
+
+            png_dir = os.path.join(PNG_DIR, f"nodo_{node_id}")
+            os.makedirs(png_dir, exist_ok=True)
+
             mat_filename = os.path.join(node_dir, f"nodo_{node_id}.mat")
 
+            # **Guardar datos en formato `.mat`**
             mat_data = {
                 "timestamp": data_node["timestamp"].dt.strftime("%H:%M:%S.%f").values,
                 "temperature": data_node["temperature"].values,
@@ -262,25 +70,43 @@ while True:
             sio.savemat(mat_filename, mat_data)
             print(f"✅ Datos actualizados en {mat_filename}")
 
-            # **Generar gráfico interactivo con Plotly**
-            fig = px.line(data_node, x="timestamp", y="temperature", title=f"Temperatura del Nodo {node_id}",
-                          labels={"timestamp": "Hora del día (HH:MM)", "temperature": "Temperatura (°C)"},
-                          markers=True)
+            # **Graficar datos acumulados**
+            medidas = {
+                "temperature": ("Temperatura", "°C", 'bo-', "temperatura.png"),
+                "humidity": ("Humedad", "%", 'go-', "humedad.png"),
+                "pressure": ("Presión", "hPa", 'ro-', "presion.png"),
+            }
 
-            fig.update_xaxes(dtick=120000, tickformat="%H:%M")
-            fig.show()
+            for key, (titulo, unidad, color, archivo) in medidas.items():
+                archivo_png = os.path.join(png_dir, archivo)
 
-            # **Guardar gráfico en `.png`**
-            png_dir = os.path.join(PNG_DIR, f"nodo_{node_id}")
-            os.makedirs(png_dir, exist_ok=True)
-            archivo_png = os.path.join(png_dir, "temperatura.png")
-            fig.write_image(archivo_png)
-            print(f"📷 Gráfica guardada en {archivo_png}")
+                # **Ordenar datos por timestamp**
+                ordenado = data_node[["timestamp", key]].drop_duplicates().sort_values("timestamp")
+
+                fig, ax = plt.subplots(figsize=(10, 5))
+
+                # **Formato de tiempo en el eje X**
+                ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+                ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=2))  # Divisiones cada 2 minutos
+
+                plt.xticks(rotation=45)
+
+                # **Graficar**
+                plt.plot(ordenado["timestamp"], ordenado[key], color, marker="o", label=f"{titulo} del Nodo {node_id}")
+
+                plt.xlabel("Hora del día (HH:MM)")
+                plt.ylabel(f"{titulo} ({unidad})")
+                plt.title(f"{titulo} del Nodo {node_id}")
+                plt.grid(True)
+                plt.legend()
+                plt.tight_layout()
+                plt.savefig(archivo_png)
+                plt.close()
+                print(f"📷 Gráfica de {titulo} actualizada en {archivo_png}")
 
     except Exception as e:
         print(f"⚠️ Error en la actualización de gráficas: {e}")
 
     time.sleep(5)
-
 
 

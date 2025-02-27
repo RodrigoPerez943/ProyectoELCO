@@ -1,6 +1,7 @@
 import os
 import csv
 import json
+from database import insertar_medicion  # Importar función para guardar en la base de datos
 
 # Obtener la ruta absoluta del directorio donde se ejecuta el script
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -43,7 +44,7 @@ if not os.path.exists(CSV_FILE):
     print(f"✅ Archivo CSV creado en: {CSV_FILE}")
 
 def procesar_mediciones():
-    """ Procesa todas las mediciones en el buffer """
+    """ Procesa todas las mediciones en el buffer y las guarda en CSV y la base de datos """
     if not os.path.exists(BUFFER_FILE):
         print("⚠️ No hay datos en el buffer para procesar.")
         return
@@ -73,7 +74,12 @@ def procesar_mediciones():
             # Asignar node_id basado en la MAC
             node_id = obtener_node_id(mac, mac_mapping)
 
+            # Guardar en lista para CSV
             batch.append([timestamp, node_id, temperature, humidity, pressure, ext])
+
+            # Guardar en la base de datos
+            insertar_medicion(timestamp, node_id, temperature, humidity, pressure)
+            print(f"✅ Medición guardada en BD y CSV: Nodo {node_id} | {temperature}°C, {humidity}%, {pressure} hPa")
 
         except Exception as e:
             print(f"⚠️ Error al procesar una línea del buffer: {e}")
