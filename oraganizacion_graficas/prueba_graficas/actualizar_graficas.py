@@ -7,9 +7,9 @@ import matplotlib.dates as mdates
 
 # **Directorios base**
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CSV_FILE = os.path.join(BASE_DIR, "sensor_data.csv")  # Archivo principal con datos de todos los nodos
-MAT_DIR = os.path.join(BASE_DIR, "graficas_mat")  # Carpeta para archivos .mat
-PNG_DIR = os.path.join(BASE_DIR, "graficas_png")  # Carpeta para imágenes de gráficas
+CSV_FILE = os.path.join(BASE_DIR, "sensor_data.csv")
+MAT_DIR = os.path.join(BASE_DIR, "graficas_mat")
+PNG_DIR = os.path.join(BASE_DIR, "graficas_png")
 
 # **Crear carpetas base si no existen**
 os.makedirs(MAT_DIR, exist_ok=True)
@@ -32,15 +32,23 @@ while True:
             time.sleep(5)
             continue
 
-        # **Convertir timestamps a formato datetime con microsegundos**
-        df["timestamp"] = pd.to_datetime(df["timestamp"], format="%H:%M:%S.%f", errors='coerce')
-        df = df.dropna(subset=["timestamp"])  # Eliminar filas con timestamps inválidos
+        # **Convertir timestamps correctamente**
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", infer_datetime_format=True)
+        df = df.dropna(subset=["timestamp"])
 
         # **Obtener nodos únicos**
         nodos = df["node_id"].unique()
 
         for node_id in nodos:
-            data_node = df[df["node_id"] == node_id]  # Filtrar datos de este nodo
+            data_node = df[df["node_id"] == node_id]
+
+            # **Verificar si hay datos**
+            if data_node.empty:
+                print(f"⚠️ No hay datos para el Nodo {node_id}, saltando...")
+                continue
+
+            print(f"📊 Datos disponibles para Nodo {node_id}:")
+            print(data_node[["timestamp", "temperature", "humidity", "pressure"]])
 
             # **Definir ruta de almacenamiento**
             node_dir = os.path.join(MAT_DIR, f"nodo_{node_id}")
@@ -74,16 +82,23 @@ while True:
                 # **Ordenar datos por timestamp**
                 ordenado = data_node[["timestamp", key]].drop_duplicates().sort_values("timestamp")
 
-                # **Configurar Matplotlib con ejes de fecha**
-                fig, ax = plt.subplots(figsize=(8, 4))
-                ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S.%f"))
-                ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+                fig, ax = plt.subplots(figsize=(10, 5))
+
+                # **Fijar rango desde las 00:00 hasta las 23:59**
+                start_of_day = pd.Timestamp.today().replace(hour=0, minute=0, second=0, microsecond=0)
+                end_of_day = pd.Timestamp.today().replace(hour=23, minute=59, second=59, microsecond=999999)
+                ax.set_xlim(start_of_day, end_of_day)
+
+                # **Etiquetas cada hora y subdivisiones cada 15 minutos**
+                ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+                ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))  # ✅ Cada hora
+                ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval=15))  # ✅ Cada 15 minutos
                 plt.xticks(rotation=45)
 
                 # **Graficar**
-                plt.plot(ordenado["timestamp"], ordenado[key], color, label=f"{titulo} del Nodo {node_id}")
+                plt.plot(ordenado["timestamp"], ordenado[key], color, marker="o", label=f"{titulo} del Nodo {node_id}")
 
-                plt.xlabel("Tiempo (HH:MM:SS.μs)")
+                plt.xlabel("Hora del día (HH:MM)")
                 plt.ylabel(f"{titulo} ({unidad})")
                 plt.title(f"{titulo} del Nodo {node_id}")
                 plt.grid(True)
@@ -96,4 +111,4 @@ while True:
     except Exception as e:
         print(f"⚠️ Error en la actualización de gráficas: {e}")
 
-    time.sleep(5)  # Esperar antes de volver a graficar
+    time.sleep(5)
