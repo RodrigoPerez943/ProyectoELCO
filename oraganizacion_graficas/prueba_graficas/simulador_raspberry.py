@@ -93,7 +93,7 @@ try:
 
             for i in range(num_sensores):
                 mac_actual = mac_sensores[i]
-                temperature = round(random.uniform(20, 30), 2)
+                temperature = round(random.uniform(20, 25), 1)
                 humidity = round(random.uniform(40, 60), 2)
                 pressure = round(random.uniform(900, 1100), 2)
                 ext = round(random.uniform(0, 10), 2)

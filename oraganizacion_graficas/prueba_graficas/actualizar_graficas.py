@@ -32,9 +32,9 @@ while True:
             time.sleep(5)
             continue
 
-        # **Convertir timestamps correctamente**
-        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", infer_datetime_format=True)
-        df = df.dropna(subset=["timestamp"])
+        # **Convertir timestamps a formato datetime con microsegundos**
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", format="%H:%M:%S.%f")
+        df = df.dropna(subset=["timestamp"])  # Asegurar que no haya timestamps inválidos
 
         # **Obtener nodos únicos**
         nodos = df["node_id"].unique()
@@ -84,15 +84,10 @@ while True:
 
                 fig, ax = plt.subplots(figsize=(10, 5))
 
-                # **Fijar rango desde las 00:00 hasta las 23:59**
-                start_of_day = pd.Timestamp.today().replace(hour=0, minute=0, second=0, microsecond=0)
-                end_of_day = pd.Timestamp.today().replace(hour=23, minute=59, second=59, microsecond=999999)
-                ax.set_xlim(start_of_day, end_of_day)
-
-                # **Etiquetas cada hora y subdivisiones cada 15 minutos**
+                # **Formato de tiempo en el eje X**
                 ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-                ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))  # ✅ Cada hora
-                ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval=15))  # ✅ Cada 15 minutos
+                ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=2))  # Divisiones cada 2 minutos
+
                 plt.xticks(rotation=45)
 
                 # **Graficar**
