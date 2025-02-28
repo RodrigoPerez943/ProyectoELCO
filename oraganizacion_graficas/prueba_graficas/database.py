@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from flask_socketio import SocketIO
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.path.join(BASE_DIR, "mediciones.db")
@@ -63,6 +64,8 @@ def insertar_medicion(timestamp, node_id, temperature, humidity, pressure, ext):
 
     conn.commit()
     conn.close()
+    # 🔴 Notificar a los clientes de la nueva medición
+    #SocketIO.emit('nueva_medicion', {"nodo_id": node_id})
 
 def obtener_mediciones_por_nodo(node_id):
     """Obtiene las mediciones de un nodo en la base de datos"""

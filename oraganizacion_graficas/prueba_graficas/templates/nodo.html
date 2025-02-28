@@ -5,14 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gráfica del Nodo {{ nodo_id }}</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
 <body>
     <h1>Gráfica del Nodo {{ nodo_id }}</h1>
     <div id="graph"></div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            fetch(`/nodo/{{ nodo_id }}/datos`)
+        var socket = io.connect("http://" + document.domain + ":" + location.port);
+        var nodo_id = "{{ nodo_id }}";
+        var datos = [];
+
+        function actualizarGrafica() {
+            fetch(`/nodo/${nodo_id}/datos`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
@@ -20,9 +25,10 @@
                         return;
                     }
 
-                    var timestamps = data.map(d => d.timestamp);
-                    var temperatures = data.map(d => d.temperature);
-                    
+                    datos = data;
+                    var timestamps = datos.map(d => d.timestamp);
+                    var temperatures = datos.map(d => d.temperature);
+
                     var trace = {
                         x: timestamps,
                         y: temperatures,
@@ -32,7 +38,7 @@
                     };
 
                     var layout = {
-                        title: 'Temperatura del Nodo {{ nodo_id }}',
+                        title: 'Temperatura del Nodo ' + nodo_id,
                         xaxis: { title: 'Hora del día (HH:MM:SS.μs)' },
                         yaxis: { title: 'Temperatura (°C)' }
                     };
@@ -40,6 +46,17 @@
                     Plotly.newPlot('graph', [trace], layout);
                 })
                 .catch(error => console.error('Error al cargar los datos:', error));
+        }
+
+        // Cargar la gráfica al inicio
+        actualizarGrafica();
+
+        // 🔴 Escuchar evento WebSocket y actualizar la gráfica en tiempo real
+        socket.on('nueva_medicion', function(data) {
+            console.log("📡 Nueva medición recibida:", data);
+            if (data.nodo_id == nodo_id) {
+                actualizarGrafica();
+            }
         });
     </script>
 </body>

@@ -7,7 +7,7 @@ import sqlite3
 from database import obtener_mediciones_por_nodo
 
 app = Flask(__name__)
-
+socketio = SocketIO(app)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "mediciones.db")
@@ -73,4 +73,4 @@ def notificar_nueva_medicion(nodo_id):
     socketio.emit('nueva_medicion', {"nodo_id": nodo_id})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
