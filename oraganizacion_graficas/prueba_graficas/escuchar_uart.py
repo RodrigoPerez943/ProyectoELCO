@@ -47,7 +47,7 @@ try:
         while True:
             try:
                 datos = uart.readline().decode(errors="ignore").strip()
-                timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]  # Milisegundos  # Leer línea completa
+                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f") 
                 if not datos:
                     continue  # Si no hay datos, continuar
 

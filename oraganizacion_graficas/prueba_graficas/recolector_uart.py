@@ -1,29 +1,27 @@
 import os
 import csv
 import json
-from database import insertar_medicion  # Importar función para guardar en la base de datos
+from database import insertar_medicion, conectar_db, crear_tabla
 
-# Obtener la ruta absoluta del directorio donde se ejecuta el script
+# Crear la tabla si no existe
+crear_tabla()
+
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
-# Definir rutas absolutas de los archivos en el mismo directorio del script
 BUFFER_FILE = os.path.join(BASE_DIR, "buffer_uart.json")
 CSV_FILE = os.path.join(BASE_DIR, "sensor_data.csv")
 MAC_MAPPING_FILE = os.path.join(BASE_DIR, "mac_mapping.json")
 
-# Cargar asignaciones de MAC si existen
 def cargar_mac_mapping():
     if os.path.exists(MAC_MAPPING_FILE):
         with open(MAC_MAPPING_FILE, "r") as file:
             return json.load(file)
     return {}
 
-# Guardar asignaciones de MAC
 def guardar_mac_mapping(mac_mapping):
     with open(MAC_MAPPING_FILE, "w") as file:
         json.dump(mac_mapping, file, indent=4)
 
-# Obtener o asignar un node_id a una MAC
 def obtener_node_id(mac_address, mac_mapping):
     if mac_address in mac_mapping:
         return mac_mapping[mac_address]
@@ -33,10 +31,8 @@ def obtener_node_id(mac_address, mac_mapping):
         guardar_mac_mapping(mac_mapping)
         return new_node_id
 
-# Inicializar mapeo de MAC
 mac_mapping = cargar_mac_mapping()
 
-# Crear archivo CSV con encabezado si no existe
 if not os.path.exists(CSV_FILE):
     with open(CSV_FILE, "w", newline="") as file:
         writer = csv.writer(file)
@@ -44,8 +40,8 @@ if not os.path.exists(CSV_FILE):
     print(f"✅ Archivo CSV creado en: {CSV_FILE}")
 
 def procesar_mediciones():
-    """ Procesa todas las mediciones en el buffer y las guarda en CSV y la base de datos """
-    if not os.path.exists(BUFFER_FILE):
+    """ Procesa las mediciones en el buffer y las guarda en CSV y la base de datos. """
+    if not os.path.exists(BUFFER_FILE) or os.path.getsize(BUFFER_FILE) == 0:
         print("⚠️ No hay datos en el buffer para procesar.")
         return
 
@@ -57,41 +53,37 @@ def procesar_mediciones():
         return
 
     if not mediciones:
-        return  # Nada que procesar
+        print("⚠️ Buffer vacío, no hay datos para procesar.")
+        return
 
     batch = []
+
     for medicion in mediciones:
         try:
-            # Extraer valores en el orden correcto
             timestamp, mac, temperature, humidity, pressure, ext = medicion
 
-            # Convertir valores numéricos
             temperature = float(temperature)
             humidity = float(humidity)
             pressure = float(pressure)
             ext = float(ext)
 
-            # Asignar node_id basado en la MAC
             node_id = obtener_node_id(mac, mac_mapping)
 
-            # Guardar en lista para CSV
             batch.append([timestamp, node_id, temperature, humidity, pressure, ext])
 
-            # Guardar en la base de datos
-            insertar_medicion(timestamp, node_id, temperature, humidity, pressure)
-            print(f"✅ Medición guardada en BD y CSV: Nodo {node_id} | {temperature}°C, {humidity}%, {pressure} hPa")
+            # Insertar en la base de datos
+            insertar_medicion(timestamp, node_id, temperature, humidity, pressure, ext)
 
         except Exception as e:
             print(f"⚠️ Error al procesar una línea del buffer: {e}")
 
-    # Guardar en formato CSV
-    with open(CSV_FILE, mode="a", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerows(batch)
+    if batch:
+        with open(CSV_FILE, mode="a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerows(batch)
 
-    print(f"✅ {len(batch)} mediciones procesadas y guardadas en el CSV.")
+        print(f"✅ {len(batch)} mediciones procesadas y guardadas en el CSV.")
 
-    # Vaciar el buffer después de procesarlo
     with open(BUFFER_FILE, "w") as file:
         json.dump([], file)
 
