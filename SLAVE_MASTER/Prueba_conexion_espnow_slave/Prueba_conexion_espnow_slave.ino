@@ -33,8 +33,8 @@ void receiveMAC(const esp_now_recv_info_t *info, const uint8_t *incomingData, in
 void assertTransmission(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
   enviado = 1;
-  Serial.println("HOLA");
-  Serial.flush();
+  // Serial.println("HOLA");
+  // Serial.flush();
 }
 
 // Estructura del mensaje
