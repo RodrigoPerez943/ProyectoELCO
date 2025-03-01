@@ -1,10 +1,7 @@
 #include <WiFi.h>
 #include <esp_now.h>
-#include <HardwareSerial.h>
 
 
-#define TX_PIN 6  // (TX)
-#define RX_PIN 7  // (RX)
 // UART1 (para los pines)
 // HardwareSerial SerialUART(1); 
 
@@ -22,26 +19,26 @@ typedef struct struct_message {
 
 // Configuro lo que pasa cuando se recibe
 void receiveDATA(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
-  // Serial.print("HOLA");
+  // Serial0.print("HOLA");
   struct_message datos_recibidos;
   memcpy(&datos_recibidos, incomingData, sizeof(datos_recibidos));
   char buffer[200];
   memset(buffer, 0, sizeof(buffer));
-  // Serial.print("MAC: ");
+  // Serial0.print("MAC: ");
   // for (int i = 0; i < 6; i++) {
-  //     Serial.printf("%02X", info->src_addr[i]);
+  //     Serial0.printf("%02X", info->src_addr[i]);
   //     // sprintf(buffer + strlen(buffer))
-  //     if (i < 5) Serial.print(":");
+  //     if (i < 5) Serial0.print(":");
   // }
-  // Serial.println();
-  // Serial.print("T: ");
-  // Serial.println(datos_recibidos.temperatura);
-  // Serial.print("H: ");
-  // Serial.println(datos_recibidos.humedad);
-  // Serial.print("p: ");
-  // Serial.println(datos_recibidos.presion); 
-  // Serial.print("EXT: ");
-  // Serial.println(datos_recibidos.exterior);
+  // Serial0.println();
+  // Serial0.print("T: ");
+  // Serial0.println(datos_recibidos.temperatura);
+  // Serial0.print("H: ");
+  // Serial0.println(datos_recibidos.humedad);
+  // Serial0.print("p: ");
+  // Serial0.println(datos_recibidos.presion); 
+  // Serial0.print("EXT: ");
+  // Serial0.println(datos_recibidos.exterior);
   sprintf(buffer, "%02X:%02X:%02X:%02X:%02X:%02X,%.2f,%.2f%,%.2f,%d", 
         info->src_addr[0],
         info->src_addr[1],
@@ -53,14 +50,14 @@ void receiveDATA(const esp_now_recv_info_t *info, const uint8_t *incomingData, i
         datos_recibidos.humedad, 
         datos_recibidos.presion, 
         datos_recibidos.exterior);
-  Serial.println(buffer);
+  Serial0.println(buffer);
 }
 void setup() {
-  // Serial.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
-  Serial.begin(115200);
+  // Serial0.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
+  Serial0.begin(115200);
   WiFi.mode(WIFI_STA); // Configurar Wi-Fi en modo estación
   if (esp_now_init() != ESP_OK) {
-    Serial.println("Error al inicializar ESP-NOW");
+    Serial0.println("Error al inicializar ESP-NOW");
   }
   // Recepción de medidas
   esp_now_register_recv_cb(receiveDATA);
@@ -70,7 +67,7 @@ void setup() {
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-    Serial.println("⚠ Error al agregar peer de Broadcast");
+    Serial0.println("⚠ Error al agregar peer de Broadcast");
     return;
   }
 }
@@ -83,7 +80,7 @@ void loop() {
           &datos[0], &datos[1], &datos[2], 
           &datos[3], &datos[4], &datos[5]);
   esp_err_t result = esp_now_send(macDestino, datos, sizeof(datos));
-  // Serial.print("Estado del envío: ");
-  // Serial.println(result == ESP_OK ? "✔ Éxito" : "❌ Falló");
+  // Serial0.print("Estado del envío: ");
+  // Serial0.println(result == ESP_OK ? "✔ Éxito" : "❌ Falló");
   delay(100);
 }
