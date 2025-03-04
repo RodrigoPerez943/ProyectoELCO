@@ -12,7 +12,7 @@ BAUDRATE = 9600  # Mantener en 9600 para ser compatible con Raspberry Pi
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Rutas de los scripts
-INICIAR_SCRIPT = os.path.join(BASE_DIR, "iniciar_sistema.sh")
+INICIAR_SCRIPT = os.path.join(BASE_DIR, "iniciar_sistema.py")
 DETENER_SCRIPT = os.path.join(BASE_DIR, "archivar_y_detener.py")
 SETUP_PUERTOS_SCRIPT = os.path.join(BASE_DIR, "setup_puertos_virtuales.py")
 SIM_FLAG = os.path.join(BASE_DIR, "sim_mode.flag")  # Archivo de control
@@ -60,7 +60,7 @@ def iniciar_sistema():
     print("🚀 Iniciando sistema simulado...")
 
     # Ejecutar el script de inicialización
-    subprocess.Popen(["bash", INICIAR_SCRIPT])
+    subprocess.Popen(["python", INICIAR_SCRIPT])
 
 # Detener el sistema
 def detener_sistema():
