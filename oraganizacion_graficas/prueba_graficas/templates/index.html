@@ -6,10 +6,29 @@
     <title>Dashboard de Nodos</title>
 </head>
 <body>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        var socket = io.connect("http://" + document.domain + ":" + location.port);
+
+        socket.on('nuevo_nodo', function(data) {
+            console.log("📡 Nuevo nodo recibido:", data.nodo_id);
+
+            // Crear un nuevo elemento de lista para el nodo
+            var nodoItem = document.createElement("li");
+            var nodoLink = document.createElement("a");
+            nodoLink.href = "/graficas/" + data.nodo_id;
+            nodoLink.innerText = data.nodo_id;
+
+            nodoItem.appendChild(nodoLink);
+            document.getElementById("lista_nodos").appendChild(nodoItem);
+        });
+    </script> -->
+
     <h1>Lista de Nodos</h1>
     <ul>
         {% for nodo in nodos %}
-            <li><a href="/graficas/{{ nodo }}">{{ nodo }}</a></li>
+            <!-- <li><a href="/graficas/{{ nodo }}">{{ nodo }}</a></li> -->
+            <li><a href="/seleccionar_grafica/{{ nodo }}">{{ nodo }}</a></li>
         {% endfor %}
     </ul>
 </body>
