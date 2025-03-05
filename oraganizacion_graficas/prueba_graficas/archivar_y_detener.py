@@ -29,7 +29,7 @@ def detener_procesos():
         print(f"⚠️ Error al detener procesos: {e}")
 
 def vaciar_buffer():
-    """ Procesar mediciones pendientes antes de cerrar el sistema """
+    """ Procesar medidas pendientes antes de cerrar el sistema """
     print("🛑 Procesando datos pendientes en la cola...")
 
     # Llamar a `vaciar_cola.py` para procesar cualquier dato en memoria
@@ -64,8 +64,8 @@ def generar_graficas_pendientes():
 
 # Ejecutar pasos de cierre
 print("🛑 Deteniendo el sistema y archivando datos...")
-vaciar_buffer()  # Procesar mediciones pendientes
-generar_graficas_pendientes()  # Graficar mediciones finales
+vaciar_buffer()  # Procesar medidas pendientes
+generar_graficas_pendientes()  # Graficar medidas finales
 archivar_graficas()  # Mover las gráficas a backup
 eliminar_csv()  # Ahora el CSV se elimina en lugar de moverse
 detener_procesos()  # Apagar los procesos en ejecución
