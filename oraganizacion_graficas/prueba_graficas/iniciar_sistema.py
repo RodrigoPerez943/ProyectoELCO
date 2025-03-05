@@ -1,66 +1,47 @@
 import os
-import subprocess
-import time
-import signal
 import sys
+import time
+import subprocess
 
-# Obtener la ruta base del proyecto
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-print(f"🔄 Iniciando sistema de adquisición y graficado en la Raspberry Pi...\n📂 Directorio base: {BASE_DIR}")
+def encontrar_ruta(script):
+    """ Devuelve la ruta absoluta de un script dentro del directorio base. """
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_dir, script)
 
-# Definir rutas absolutas de los scripts
-ESCUCHAR_SCRIPT = os.path.join(BASE_DIR, "escuchar_uart.py")
-UART_SCRIPT = os.path.join(BASE_DIR, "recolector_uart.py")
-GRAFICAS_SCRIPT = os.path.join(BASE_DIR, "actualizar_graficas.py")
-DASHBOARD_SCRIPT = os.path.join(BASE_DIR, "dashboard.py")
-
-# Verificar que los archivos existen antes de ejecutarlos
-scripts = {
-    "Escuchar UART": ESCUCHAR_SCRIPT,
-    "Recolector UART": UART_SCRIPT,
-    "Actualizar Gráficas": GRAFICAS_SCRIPT,
-    "Dashboard Web": DASHBOARD_SCRIPT
+# Definir rutas de los scripts
+SCRIPTS = {
+    "database": encontrar_ruta("database.py"),
+    "escuchar_uart": encontrar_ruta("escuchar_uart.py"),
+    "recolector_uart": encontrar_ruta("recolector_uart.py"),
+    "actualizar_graficas": encontrar_ruta("actualizar_graficas.py"),
+    "dashboard": encontrar_ruta("dashboard.py"),
 }
 
-for nombre, ruta in scripts.items():
-    if not os.path.exists(ruta):
-        print(f"❌ Error: No se encontró {nombre} ({ruta})")
+# Verificar que los archivos existen antes de ejecutarlos
+for nombre, ruta in SCRIPTS.items():
+    if not os.path.isfile(ruta):
+        print(f"❌ Error: No se encontró {ruta}")
         sys.exit(1)
 
 # Iniciar scripts en segundo plano
-procesos = {}
+print("🔄 Iniciando sistema de adquisición y graficado...")
+subprocess.Popen(["python", SCRIPTS["database"]])
 
-def iniciar_proceso(nombre, script):
-    """Inicia un proceso en segundo plano y lo almacena en el diccionario de procesos."""
-    print(f"🚀 Iniciando {nombre}...")
-    procesos[nombre] = subprocess.Popen(["python3", script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+print("📡 Iniciando escucha de datos UART...")
+subprocess.Popen(["python", SCRIPTS["escuchar_uart"]])
 
-# Iniciar procesos necesarios
-iniciar_proceso("Escuchar UART", ESCUCHAR_SCRIPT)
-time.sleep(2)  # Pequeña espera para asegurar la inicialización
+time.sleep(5)  # Esperar a que UART comience a recibir datos
 
-iniciar_proceso("Actualizar Gráficas", GRAFICAS_SCRIPT)
-time.sleep(2)
+print("📊 Iniciando actualización de gráficas...")
+subprocess.Popen(["python", SCRIPTS["actualizar_graficas"]])
 
-iniciar_proceso("Dashboard Web", DASHBOARD_SCRIPT)
+print("🖥️ Iniciando dashboard web...")
+subprocess.Popen(["python", SCRIPTS["dashboard"]])
 
-# Manejar interrupción con Ctrl + C
-def detener_sistema(signal_received, frame):
-    """Finaliza todos los procesos en ejecución de manera ordenada."""
-    print("\n🛑 Deteniendo el sistema...")
-    for nombre, proceso in procesos.items():
-        print(f"🔴 Deteniendo {nombre}...")
-        proceso.terminate()
-        proceso.wait()
-    print("✅ Todos los procesos se han detenido correctamente.")
-    sys.exit(0)
-
-# Capturar señales de interrupción (Ctrl + C)
-signal.signal(signal.SIGINT, detener_sistema)
-
-# Mantener el script activo hasta que se reciba Ctrl + C
+# Mantener el script en ejecución para evitar que finalice
 try:
     while True:
-        time.sleep(10)
+        time.sleep(1)
 except KeyboardInterrupt:
-    detener_sistema(None, None)
+    print("\n🛑 Sistema detenido manualmente.")
+    sys.exit(0)

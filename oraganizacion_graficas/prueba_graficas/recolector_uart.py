@@ -80,7 +80,7 @@ def procesar_mediciones():
     if batch:
         with open(CSV_FILE, mode="a", newline="") as file:
             writer = csv.writer(file)
-            writer.writerows(batch)
+            writer.writerows(batch)         
 
         print(f"✅ {len(batch)} mediciones procesadas y guardadas en el CSV.")
 

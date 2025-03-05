@@ -1,4 +1,3 @@
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
@@ -13,8 +12,12 @@ MAT_DIR = os.path.join(BASE_DIR, "graficas_mat")
 PNG_DIR = os.path.join(BASE_DIR, "graficas_png")
 
 # **Crear carpetas base si no existen**
-os.makedirs(MAT_DIR, exist_ok=True)
-os.makedirs(PNG_DIR, exist_ok=True)
+for directory in [MAT_DIR, PNG_DIR]:
+    try:
+        os.makedirs(directory, exist_ok=True)
+        print(f"📂 Carpeta asegurada: {directory}")
+    except Exception as e:
+        print(f"❌ Error al crear {directory}: {e}")
 
 print("📊 Monitoreando `sensor_data.csv` para actualizar gráficas...")
 
@@ -34,7 +37,7 @@ while True:
             continue
 
         # **Convertir timestamps a formato datetime con microsegundos**
-        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", format="%H:%M:%S.%f")
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", format="%Y-%m-%d %H:%M:%S.%f")
         df = df.dropna(subset=["timestamp"])  # Asegurar que no haya timestamps inválidos
 
         # **Obtener nodos únicos**
@@ -48,27 +51,34 @@ while True:
                 print(f"⚠️ No hay datos para el Nodo {node_id}, saltando...")
                 continue
 
-            print(f"📊 Datos disponibles para Nodo {node_id}:")
-            print(data_node[["timestamp", "temperature", "humidity", "pressure"]])
+            print(f"📊 Datos disponibles para Nodo {node_id}: {len(data_node)} registros.")
 
             # **Definir ruta de almacenamiento**
             node_dir = os.path.join(MAT_DIR, f"nodo_{node_id}")
-            os.makedirs(node_dir, exist_ok=True)
-
             png_dir = os.path.join(PNG_DIR, f"nodo_{node_id}")
-            os.makedirs(png_dir, exist_ok=True)
+
+            # **Crear directorios del nodo**
+            for directory in [node_dir, png_dir]:
+                try:
+                    os.makedirs(directory, exist_ok=True)
+                except Exception as e:
+                    print(f"❌ Error al crear {directory}: {e}")
 
             mat_filename = os.path.join(node_dir, f"nodo_{node_id}.mat")
 
             # **Guardar datos en formato `.mat`**
-            mat_data = {
-                "timestamp": data_node["timestamp"].dt.strftime("%H:%M:%S.%f").values,
-                "temperature": data_node["temperature"].values,
-                "humidity": data_node["humidity"].values,
-                "pressure": data_node["pressure"].values,
-            }
-            sio.savemat(mat_filename, mat_data)
-            print(f"✅ Datos actualizados en {mat_filename}")
+            try:
+                mat_data = {
+                    "timestamp": data_node["timestamp"].astype(str).values,  # Convertir a string
+                    "temperature": data_node["temperature"].values,
+                    "humidity": data_node["humidity"].values,
+                    "pressure": data_node["pressure"].values,
+                }
+                sio.savemat(mat_filename, mat_data)
+                print(f"✅ Datos guardados en {mat_filename}")
+
+            except Exception as e:
+                print(f"❌ Error al guardar {mat_filename}: {e}")
 
             # **Graficar datos acumulados**
             medidas = {
@@ -82,6 +92,10 @@ while True:
 
                 # **Ordenar datos por timestamp**
                 ordenado = data_node[["timestamp", key]].drop_duplicates().sort_values("timestamp")
+
+                if ordenado.empty:
+                    print(f"⚠️ No hay datos suficientes para {titulo} en Nodo {node_id}, omitiendo gráfica.")
+                    continue
 
                 fig, ax = plt.subplots(figsize=(10, 5))
 
@@ -100,13 +114,17 @@ while True:
                 plt.grid(True)
                 plt.legend()
                 plt.tight_layout()
-                plt.savefig(archivo_png)
+
+                # **Guardar la gráfica**
+                try:
+                    plt.savefig(archivo_png)
+                    print(f"📷 Gráfica de {titulo} guardada en {archivo_png}")
+                except Exception as e:
+                    print(f"❌ Error al guardar la gráfica {archivo_png}: {e}")
+
                 plt.close()
-                print(f"📷 Gráfica de {titulo} actualizada en {archivo_png}")
 
     except Exception as e:
         print(f"⚠️ Error en la actualización de gráficas: {e}")
 
-    time.sleep(5)
-
-
+    time.sleep(5)  # Esperar 5 segundos antes de volver a leer el archivo
