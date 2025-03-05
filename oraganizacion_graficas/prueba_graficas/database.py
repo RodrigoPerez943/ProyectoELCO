@@ -2,6 +2,12 @@ import sqlite3
 import os
 from flask_socketio import SocketIO
 
+#from flask import Flask, render_template, jsonify
+#from flask_socketio import SocketIO
+
+#app = Flask(__name__)
+#socketio = SocketIO(app)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.path.join(BASE_DIR, "mediciones.db")
 
@@ -63,6 +69,15 @@ def insertar_medicion(timestamp, node_id, temperature, humidity, pressure, ext):
     ''', (timestamp, node_id, temperature, humidity, pressure, ext))
 
     conn.commit()
+
+    # 🔴 Verificamos si el nodo es nuevo
+    #cursor.execute("SELECT COUNT(*) FROM mediciones WHERE node_id = ?", (node_id))
+    #count = cursor.fetchone()[0]
+
+    #if count == 1: #Si solo tiene una medición, significa que es un nodo nuevo
+    #    print(f"📡 Nuevo nodo detectado: nodo_{node_id}")
+    #    socketio.emit('nuevo_nodo', {"nodo_id": f"nodo_{node_id}"})
+
     conn.close()
     # 🔴 Notificar a los clientes de la nueva medición
     #SocketIO.emit('nueva_medicion', {"nodo_id": node_id})
