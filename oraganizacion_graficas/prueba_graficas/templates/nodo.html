@@ -2,20 +2,17 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gráfica del Nodo {{ nodo_id }}</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
 <body>
     <h1>Gráfica del Nodo {{ nodo_id }}</h1>
     <div id="graph"></div>
 
     <script>
-        var socket = io.connect("http://" + document.domain + ":" + location.port);
-        var nodo_id = "{{ nodo_id }}";
-        var datos = [];
+        const nodo_id = "{{ nodo_id }}";
 
+        // Función que obtiene datos de `/nodo/<nodo_id>/datos` y repinta el gráfico
         function actualizarGrafica() {
             fetch(`/nodo/${nodo_id}/datos`)
                 .then(response => response.json())
@@ -24,22 +21,21 @@
                         document.getElementById("graph").innerText = "Error: " + data.error;
                         return;
                     }
+                    // Procesar datos
+                    const timestamps = data.map(d => d.timestamp);
+                    const temps      = data.map(d => d.temperature);
 
-                    datos = data;
-                    var timestamps = datos.map(d => d.timestamp);
-                    var temperatures = datos.map(d => d.temperature);
-
-                    var trace = {
+                    const trace = {
                         x: timestamps,
-                        y: temperatures,
+                        y: temps,
                         mode: 'lines+markers',
                         type: 'scatter',
                         name: 'Temperatura'
                     };
 
-                    var layout = {
+                    const layout = {
                         title: 'Temperatura del Nodo ' + nodo_id,
-                        xaxis: { title: 'Hora del día (HH:MM:SS.μs)' },
+                        xaxis: { title: 'Fecha/Hora' },
                         yaxis: { title: 'Temperatura (°C)' }
                     };
 
@@ -48,16 +44,11 @@
                 .catch(error => console.error('Error al cargar los datos:', error));
         }
 
-        // Cargar la gráfica al inicio
+        // Llamamos una vez al cargar la página
         actualizarGrafica();
 
-        // 🔴 Escuchar evento WebSocket y actualizar la gráfica en tiempo real
-        socket.on('nueva_medicion', function(data) {
-            console.log("📡 Nueva medición recibida:", data);
-            if (data.nodo_id == nodo_id) {
-                actualizarGrafica();
-            }
-        });
+        // Y luego cada 5 segundos actualizamos la gráfica sin recargar todo el HTML
+        setInterval(actualizarGrafica, 5000);
     </script>
 </body>
 </html>
