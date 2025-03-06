@@ -1,54 +1,65 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Gráfica del Nodo {{ nodo_id }}</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Gráfica del Nodo {{ nodo_id }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-    <h1>Gráfica del Nodo {{ nodo_id }}</h1>
-    <div id="graph"></div>
 
-    <script>
-        const nodo_id = "{{ nodo_id }}";
+<header>
+  <h1>Gráfica del Nodo {{ nodo_id }}</h1>
+</header>
 
-        // Función que obtiene datos de `/nodo/<nodo_id>/datos` y repinta el gráfico
-        function actualizarGrafica() {
-            fetch(`/nodo/${nodo_id}/datos`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        document.getElementById("graph").innerText = "Error: " + data.error;
-                        return;
-                    }
-                    // Procesar datos
-                    const timestamps = data.map(d => d.timestamp);
-                    const temps      = data.map(d => d.temperature);
+<div class="container" id="graphContainer">
+  <div id="graph"></div>
+</div>
 
-                    const trace = {
-                        x: timestamps,
-                        y: temps,
-                        mode: 'lines+markers',
-                        type: 'scatter',
-                        name: 'Temperatura'
-                    };
+<script>
+  const nodo_id = "{{ nodo_id }}";
 
-                    const layout = {
-                        title: 'Temperatura del Nodo ' + nodo_id,
-                        xaxis: { title: 'Fecha/Hora' },
-                        yaxis: { title: 'Temperatura (°C)' }
-                    };
-
-                    Plotly.newPlot('graph', [trace], layout);
-                })
-                .catch(error => console.error('Error al cargar los datos:', error));
+  function actualizarGrafica() {
+    fetch(`/nodo/${nodo_id}/datos`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById("graph").innerText = "Error: " + data.error;
+          return;
         }
 
-        // Llamamos una vez al cargar la página
-        actualizarGrafica();
+        const timestamps = data.map(d => d.timestamp);
+        const temps = data.map(d => d.temperature);
 
-        // Y luego cada 5 segundos actualizamos la gráfica sin recargar todo el HTML
-        setInterval(actualizarGrafica, 5000);
-    </script>
+        const trace = {
+          x: timestamps,
+          y: temps,
+          mode: 'lines+markers',
+          type: 'scatter',
+          name: 'Temperatura'
+        };
+
+        const layout = {
+          title: `Temperatura del Nodo ${nodo_id}`,
+          xaxis: { title: 'Fecha/Hora' },
+          yaxis: { title: 'Temperatura (°C)' },
+          autosize: true
+        };
+
+        Plotly.newPlot('graph', [trace], layout, {responsive: true});
+      })
+      .catch(error => console.error('Error al cargar los datos:', error));
+  }
+
+  // Cargar al inicio
+  actualizarGrafica();
+  // Refresco cada 5s
+  setInterval(actualizarGrafica, 5000);
+</script>
+
+<footer>
+  <p>© 2025 - Mi Proyecto de Nodos</p>
+</footer>
+
 </body>
 </html>

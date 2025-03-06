@@ -1,26 +1,36 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Nodos</title>
+  <meta charset="UTF-8">
+  <title>Dashboard de Nodos</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-    <h1>Lista de Nodos</h1>
-    <ul>
-        {% for nodo in nodos %}
-            <!-- <li><a href="/graficas/{{ nodo }}">{{ nodo }}</a></li> -->
-            <li><a href="/seleccionar_grafica/{{ nodo }}">{{ nodo }}</a></li>
-        {% endfor %}
-    </ul>
+<header>
+  <h1>Lista de Nodos</h1>
+</header>
 
+<div class="container">
+  <ul>
+    {% for nodo in nodos %}
+      <li>
+        <a href="/seleccionar_grafica/{{ nodo }}">{{ nodo }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
 
-    <script>
-        setInterval(() => {
-            window.location.reload();
-        }, 5000);
-    </script>
-    
+<script>
+  // Recargar esta página cada 5 segundos
+  setInterval(() => {
+    window.location.reload();
+  }, 5000);
+</script>
+
+<footer>
+  <p>© 2025 - Mi Proyecto de Nodos</p>
+</footer>
+
 </body>
 </html>

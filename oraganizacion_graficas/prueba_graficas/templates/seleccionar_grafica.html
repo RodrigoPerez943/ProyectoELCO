@@ -1,16 +1,28 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seleccionar Gráfica</title>
+  <meta charset="UTF-8">
+  <title>Seleccionar Gráfica</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Seleccionar Gráfica para {{ nodo_id }}</h1>
-    <ul>
-        <li><a href="/graficas/{{ nodo_id }}/temperature">Temperatura</a></li>
-        <li><a href="/graficas/{{ nodo_id }}/humidity">Humedad</a></li>
-        <li><a href="/graficas/{{ nodo_id }}/pressure">Presión</a></li>
-    </ul>
+
+<header>
+  <h1>Seleccionar Gráfica</h1>
+</header>
+
+<div class="container">
+  <h2>Opciones para {{ nodo_id }}</h2>
+  <ul>
+    <li><a href="/graficas/{{ nodo_id }}/temperature">Temperatura</a></li>
+    <li><a href="/graficas/{{ nodo_id }}/humidity">Humedad</a></li>
+    <li><a href="/graficas/{{ nodo_id }}/pressure">Presión</a></li>
+  </ul>
+</div>
+
+<footer>
+  <p>© 2025 - Mi Proyecto de Nodos</p>
+</footer>
+
 </body>
 </html>
