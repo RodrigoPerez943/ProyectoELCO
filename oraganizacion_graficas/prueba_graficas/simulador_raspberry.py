@@ -5,14 +5,14 @@ import serial
 import subprocess
 
 # Configuración de UART
-PUERTO_SERIE = "COM10"  # Puerto UART a utilizar en Windows (VSPE)
+PUERTO_SERIE = "COM10"  # Puerto UART en Windows
 BAUDRATE = 9600  # Mantener en 9600 para ser compatible con Raspberry Pi
 
 # Obtener la ruta del directorio donde está este script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Rutas de los scripts
-INICIAR_SCRIPT = os.path.join(BASE_DIR, "iniciar_sistema.sh")
+INICIAR_SCRIPT = os.path.join(BASE_DIR, "iniciar_sistema.py")
 DETENER_SCRIPT = os.path.join(BASE_DIR, "archivar_y_detener.py")
 SETUP_PUERTOS_SCRIPT = os.path.join(BASE_DIR, "setup_puertos_virtuales.py")
 SIM_FLAG = os.path.join(BASE_DIR, "sim_mode.flag")  # Archivo de control
@@ -27,6 +27,8 @@ def generar_mac_aleatoria():
     return ":".join(f"{random.randint(0x00, 0xFF):02X}" for _ in range(6))
 
 mac_sensores = [generar_mac_aleatoria() for _ in range(4)]
+mac_fuera = generar_mac_aleatoria()
+ext_fuera = 1
 print(f"📡 MAC de los sensores simulados: {mac_sensores}")
 
 # Ejecutar `setup_puertos_virtuales.py` antes de iniciar la simulación
@@ -60,7 +62,7 @@ def iniciar_sistema():
     print("🚀 Iniciando sistema simulado...")
 
     # Ejecutar el script de inicialización
-    subprocess.Popen(["bash", INICIAR_SCRIPT], cwd=BASE_DIR)
+    subprocess.Popen(["python", INICIAR_SCRIPT])
 
 # Detener el sistema
 def detener_sistema():
@@ -84,37 +86,28 @@ if not esperar_puertos():
 # ✅ Iniciar el sistema y los scripts necesarios
 iniciar_sistema()
 time.sleep(5)
-# ✅ Simulación de datos UART enviando hasta 4 sensores simultáneamente
+
+# ✅ Simulación de datos UART enviando hasta 4 sensores simultáneamente en una sola línea
 try:
     with serial.Serial(PUERTO_SERIE, BAUDRATE, timeout=1) as uart:
         while True:
             num_sensores = random.randint(1, 4)  # Enviar datos de entre 1 y 4 sensores en cada ciclo
-            
+            temperature = round(random.uniform(18, 20), 1)
+            medicion_fuera =f"{mac_fuera},{temperature},{0},{0},{ext_fuera}\n"
+            uart.write(medicion_fuera.encode())
+            print(f"📡 MEDICION DE FUERA: -> {medicion_fuera}")
+            time.sleep(0.05)
             for i in range(num_sensores):
                 mac_actual = mac_sensores[i]
-
-                uart.write(f"MAC: {mac_actual}\n".encode())
-                print(f"📡 Simulador UART: Enviando -> MAC: {mac_actual}")
-                time.sleep(0.01)  # Pequeño delay
-
-                temperature = round(random.uniform(20, 30), 2)
-                uart.write(f"T: {temperature}\n".encode())
-                print(f"📡 Simulador UART: Enviando -> T: {temperature}")
-                time.sleep(0.01)
-
+                temperature = round(random.uniform(20, 25), 1)
                 humidity = round(random.uniform(40, 60), 2)
-                uart.write(f"H: {humidity}\n".encode())
-                print(f"📡 Simulador UART: Enviando -> H: {humidity}")
-                time.sleep(0.01)
-
                 pressure = round(random.uniform(900, 1100), 2)
-                uart.write(f"p: {pressure}\n".encode())
-                print(f"📡 Simulador UART: Enviando -> p: {pressure}")
-                time.sleep(0.01)
+                ext = 0
 
-                ext = round(random.uniform(0, 10), 2)
-                uart.write(f"EXT: {ext}\n".encode())
-                print(f"📡 Simulador UART: Enviando -> EXT: {ext}")
+                # Formato correcto en una sola línea: MAC, Temp, Hum, Presión, Ext
+                medicion_total =f"{mac_actual},{temperature},{humidity},{pressure},{ext}\n"
+                uart.write(medicion_total.encode())
+                print(f"📡 Simulador UART: Enviando -> {medicion_total}")
                 time.sleep(0.05)
 
             time.sleep(5)  # Pequeña espera entre envíos

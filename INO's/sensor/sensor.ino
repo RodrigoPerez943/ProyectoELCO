@@ -11,7 +11,7 @@ Adafruit_BMP280 bmp280;
 
 void setup() {
     Serial.begin(115200);
-    Wire.begin(); // Inicializa I2C con los pines por defecto del ESP32
+    Wire.begin(8, 9); // Inicializa I2C con los pines por defecto del ESP32
 
     Serial.println("\n--- Inicializando sensores ---");
 
