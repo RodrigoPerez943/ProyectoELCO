@@ -1,35 +1,36 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Nodos</title>
+  <meta charset="UTF-8">
+  <title>Dashboard de Nodos</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script>
-        var socket = io.connect("http://" + document.domain + ":" + location.port);
 
-        socket.on('nuevo_nodo', function(data) {
-            console.log("📡 Nuevo nodo recibido:", data.nodo_id);
+<header>
+  <h1>Lista de Nodos</h1>
+</header>
 
-            // Crear un nuevo elemento de lista para el nodo
-            var nodoItem = document.createElement("li");
-            var nodoLink = document.createElement("a");
-            nodoLink.href = "/graficas/" + data.nodo_id;
-            nodoLink.innerText = data.nodo_id;
+<div class="container">
+  <ul>
+    {% for nodo in nodos %}
+      <li>
+        <a href="/seleccionar_grafica/{{ nodo }}">{{ nodo }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
 
-            nodoItem.appendChild(nodoLink);
-            document.getElementById("lista_nodos").appendChild(nodoItem);
-        });
-    </script> -->
+<script>
+  // Recargar esta página cada 5 segundos
+  setInterval(() => {
+    window.location.reload();
+  }, 5000);
+</script>
 
-    <h1>Lista de Nodos</h1>
-    <ul>
-        {% for nodo in nodos %}
-            <!-- <li><a href="/graficas/{{ nodo }}">{{ nodo }}</a></li> -->
-            <li><a href="/seleccionar_grafica/{{ nodo }}">{{ nodo }}</a></li>
-        {% endfor %}
-    </ul>
+<footer>
+  <p>© 2025 - Mi Proyecto de Nodos</p>
+</footer>
+
 </body>
 </html>

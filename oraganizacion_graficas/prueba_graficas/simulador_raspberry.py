@@ -27,6 +27,8 @@ def generar_mac_aleatoria():
     return ":".join(f"{random.randint(0x00, 0xFF):02X}" for _ in range(6))
 
 mac_sensores = [generar_mac_aleatoria() for _ in range(4)]
+mac_fuera = generar_mac_aleatoria()
+ext_fuera = 1
 print(f"📡 MAC de los sensores simulados: {mac_sensores}")
 
 # Ejecutar `setup_puertos_virtuales.py` antes de iniciar la simulación
@@ -90,13 +92,17 @@ try:
     with serial.Serial(PUERTO_SERIE, BAUDRATE, timeout=1) as uart:
         while True:
             num_sensores = random.randint(1, 4)  # Enviar datos de entre 1 y 4 sensores en cada ciclo
-
+            temperature = round(random.uniform(18, 20), 1)
+            medicion_fuera =f"{mac_fuera},{temperature},{0},{0},{ext_fuera}\n"
+            uart.write(medicion_fuera.encode())
+            print(f"📡 MEDICION DE FUERA: -> {medicion_fuera}")
+            time.sleep(0.05)
             for i in range(num_sensores):
                 mac_actual = mac_sensores[i]
                 temperature = round(random.uniform(20, 25), 1)
                 humidity = round(random.uniform(40, 60), 2)
                 pressure = round(random.uniform(900, 1100), 2)
-                ext = round(random.uniform(0, 10), 2)
+                ext = 0
 
                 # Formato correcto en una sola línea: MAC, Temp, Hum, Presión, Ext
                 medicion_total =f"{mac_actual},{temperature},{humidity},{pressure},{ext}\n"
