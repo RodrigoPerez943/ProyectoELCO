@@ -2,9 +2,6 @@
 #include <esp_now.h>
 
 
-// UART1 (para los pines)
-// HardwareSerial SerialUART(1); 
-
 // Prueba para el master, la mac destino es broadcast
 uint8_t macDestino[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
@@ -24,21 +21,6 @@ void receiveDATA(const esp_now_recv_info_t *info, const uint8_t *incomingData, i
   memcpy(&datos_recibidos, incomingData, sizeof(datos_recibidos));
   char buffer[200];
   memset(buffer, 0, sizeof(buffer));
-  // Serial0.print("MAC: ");
-  // for (int i = 0; i < 6; i++) {
-  //     Serial0.printf("%02X", info->src_addr[i]);
-  //     // sprintf(buffer + strlen(buffer))
-  //     if (i < 5) Serial0.print(":");
-  // }
-  // Serial0.println();
-  // Serial0.print("T: ");
-  // Serial0.println(datos_recibidos.temperatura);
-  // Serial0.print("H: ");
-  // Serial0.println(datos_recibidos.humedad);
-  // Serial0.print("p: ");
-  // Serial0.println(datos_recibidos.presion); 
-  // Serial0.print("EXT: ");
-  // Serial0.println(datos_recibidos.exterior);
   sprintf(buffer, "%02X:%02X:%02X:%02X:%02X:%02X,%.2f,%.2f%,%.2f,%d", 
         info->src_addr[0],
         info->src_addr[1],
@@ -53,7 +35,6 @@ void receiveDATA(const esp_now_recv_info_t *info, const uint8_t *incomingData, i
   Serial0.println(buffer);
 }
 void setup() {
-  // Serial0.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
   Serial0.begin(115200);
   WiFi.mode(WIFI_STA); // Configurar Wi-Fi en modo estación
   if (esp_now_init() != ESP_OK) {
@@ -80,7 +61,5 @@ void loop() {
           &datos[0], &datos[1], &datos[2], 
           &datos[3], &datos[4], &datos[5]);
   esp_err_t result = esp_now_send(macDestino, datos, sizeof(datos));
-  // Serial0.print("Estado del envío: ");
-  // Serial0.println(result == ESP_OK ? "✔ Éxito" : "❌ Falló");
-  delay(100);
+  delay(5000);
 }

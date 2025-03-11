@@ -20,7 +20,6 @@ void receiveMAC(const esp_now_recv_info_t *info, const uint8_t *incomingData, in
   // memcpy(macDest, incomingData, 6);
   if(conectado == 0)
   {
-    // uint8_t broad[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
     memcpy(macDest, info->src_addr, 6);
     conectado = 1;
   }
@@ -29,8 +28,6 @@ void receiveMAC(const esp_now_recv_info_t *info, const uint8_t *incomingData, in
 void assertTransmission(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
   enviado = 1;
-  // Serial.println("HOLA");
-  // Serial.flush();
 }
 
 // Estructura del mensaje
