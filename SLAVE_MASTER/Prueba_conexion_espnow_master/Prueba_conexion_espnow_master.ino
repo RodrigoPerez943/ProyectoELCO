@@ -16,7 +16,6 @@ typedef struct struct_message {
 
 // Configuro lo que pasa cuando se recibe
 void receiveDATA(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
-  // Serial0.print("HOLA");
   struct_message datos_recibidos;
   memcpy(&datos_recibidos, incomingData, sizeof(datos_recibidos));
   char buffer[200];
