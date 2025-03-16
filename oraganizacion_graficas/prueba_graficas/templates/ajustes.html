@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ajustes de Intervalo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header>
+  <h1>Ajustes ⚙</h1>
+  <a href="/" class="back-button">⬅ Volver</a>
+</header>
+
+<div class="container">
+  <h2>⏳ Configurar Intervalo de Medición</h2>
+
+  <label for="horas">Horas:</label>
+  <select id="horas" onchange="cambiarIntervalo()">
+    {% for h in range(0, 24) %}
+      <option value="{{ h }}" {% if intervalo_horas == h %}selected{% endif %}>{{ h }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="minutos">Minutos:</label>
+  <select id="minutos" onchange="cambiarIntervalo()">
+    {% for m in range(0, 60) %}
+      <option value="{{ m }}" {% if intervalo_minutos == m %}selected{% endif %}>{{ m }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="segundos">Segundos:</label>
+  <select id="segundos" onchange="cambiarIntervalo()">
+    {% for s in range(0, 60) %}
+      <option value="{{ s }}" {% if intervalo_segundos == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+
+  <p>📡 Intervalo actual: <strong id="intervalo_actual">{{ intervalo_horas }}h {{ intervalo_minutos }}m {{ intervalo_segundos }}s</strong></p>
+</div>
+
+<script>
+  function cambiarIntervalo() {
+    let horas = document.getElementById("horas").value;
+    let minutos = document.getElementById("minutos").value;
+    let segundos = document.getElementById("segundos").value;
+    
+    fetch("/cambiar_intervalo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ horas: horas, minutos: minutos, segundos: segundos })
+    })
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById("intervalo_actual").innerText = 
+        data.nuevo_horas + "h " + data.nuevo_minutos + "m " + data.nuevo_segundos + "s";
+      console.log("✔ Intervalo cambiado:", data);
+    })
+    .catch(error => console.error("❌ Error al cambiar intervalo:", error));
+  }
+</script>
+
+<footer>
+  <p>© 2025 - Mi Proyecto de Nodos</p>
+</footer>
+
+</body>
+</html>

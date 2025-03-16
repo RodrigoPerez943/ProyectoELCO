@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <title>Dashboard de Nodos</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
 <header>
   <h1>Lista de Nodos</h1>
+  <a href="/ajustes" class="settings-icon">⚙️</a>
 </header>
 
 <div class="container">
@@ -22,15 +24,13 @@
 </div>
 
 <script>
-  // Recargar esta página cada 5 segundos
+  // 🔄 Recargar la página cada 5 segundos
   setInterval(() => {
     window.location.reload();
   }, 5000);
 </script>
 
-<footer>
-  <p>© 2025 - Mi Proyecto de Nodos</p>
-</footer>
+
 
 </body>
 </html>
