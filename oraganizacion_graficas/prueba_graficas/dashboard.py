@@ -1,14 +1,20 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request, redirect, url_for
 import os
 import pandas as pd
 import plotly.express as px
 import sqlite3
+import serial 
 from database import obtener_mediciones_por_nodo
+import json
 
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "mediciones.db")
+INTERVALO_FILE = os.path.join(BASE_DIR, "intervalo_config.json")
+
+UART_PORT = "COM9"  # ⚠ Ajustar según el sistema operativo
+BAUDRATE = 115200
 
 def conectar_db():
     """Conectar a la base de datos y devolver la conexión."""
@@ -157,6 +163,49 @@ def ver_grafica_pressure(nodo_id):
 
     except Exception as e:
         return jsonify({"error": f"Error generando gráfica: {e}"})
+
+def enviar_intervalo_uart(intervalo):
+    """Envia el intervalo de medición por UART a la Raspberry Pi."""
+    try:
+        with serial.Serial(UART_PORT, BAUDRATE, timeout=1) as ser:
+            comando = f"INTERVALO:{intervalo}\n"
+            ser.write(comando.encode())
+            print(f"📡 Intervalo de medición enviado: {intervalo} segundos")
+    except Exception as e:
+        print(f"⚠️ Error al enviar datos por UART: {e}")
+
+def guardar_intervalo(intervalo):
+    """Guarda el intervalo en un archivo JSON."""
+    with open(INTERVALO_FILE, "w") as file:
+        json.dump({"intervalo": intervalo}, file)
+
+def obtener_intervalo():
+    """Obtiene el intervalo almacenado, o devuelve 60s por defecto."""
+    if os.path.exists(INTERVALO_FILE):
+        with open(INTERVALO_FILE, "r") as file:
+            data = json.load(file)
+            return data.get("intervalo", 60)
+    return 60  # 📌 Valor por defecto
+
+@app.route('/ajustes', methods=["GET", "POST"])
+def ajustes():
+    """Página de configuración del intervalo de medición."""
+    intervalo_actual = obtener_intervalo()  # 📌 Obtener intervalo actual
+
+    if request.method == "POST":
+        horas = int(request.form.get("horas", 0))
+        minutos = int(request.form.get("minutos", 0))
+        segundos = int(request.form.get("segundos", 0))
+
+        nuevo_intervalo = horas * 3600 + minutos * 60 + segundos  # Convertir a segundos
+
+        if nuevo_intervalo > 0:
+            guardar_intervalo(nuevo_intervalo)  # 📌 Guardar intervalo
+            enviar_intervalo_uart(nuevo_intervalo)  # 📡 Enviar por UART
+            print(f"✅ Intervalo actualizado: {nuevo_intervalo} segundos")
+        return redirect(url_for("ajustes"))
+
+    return render_template("ajustes.html", intervalo=intervalo_actual)  # 📌 Enviar intervalo actual a la web
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
