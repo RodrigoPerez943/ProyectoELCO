@@ -35,9 +35,6 @@ def index():
         nodos.add(f"nodo_{row[0]}")
     conn.close()
 
-    if not nodos:
-        return "⚠️ No hay nodos registrados en la base de datos.", 404
-
     return render_template("index.html", nodos=sorted(nodos))
 
 @app.route('/seleccionar_grafica/<nodo_id>')
