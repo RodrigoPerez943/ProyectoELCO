@@ -30,9 +30,13 @@ def index():
     nodos = set()
     conn = conectar_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT node_id FROM mediciones")
+    cursor.execute("SELECT DISTINCT node_id, ext FROM mediciones")
     for row in cursor.fetchall():
-        nodos.add(f"nodo_{row[0]}")
+        #nodos.add(f"nodo_{row[0]}")
+        if (row[1] == 1):
+            nodos.add(f"sensor_exterior_{row[0]}")
+        else:
+            nodos.add(f"sensor_{row[0]}")    
     conn.close()
 
     return render_template("index.html", nodos=sorted(nodos))
