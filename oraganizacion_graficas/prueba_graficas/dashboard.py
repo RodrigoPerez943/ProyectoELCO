@@ -44,7 +44,6 @@ def seleccionar_grafica(nodo_id):
 
 @app.route('/graficas/<nodo_id>/temperature')
 def ver_grafica_temperature(nodo_id):
-    """Genera la gráfica de temperatura forzando un tamaño grande (1400x800 px)."""
     try:
         node_id_int = int(nodo_id.split("_")[-1])
         datos = obtener_mediciones_por_nodo(node_id_int)
@@ -66,9 +65,7 @@ def ver_grafica_temperature(nodo_id):
 
         # Forzar un tamaño grande en píxeles:
         fig.update_layout(
-            autosize=False,
-            width=1400,
-            height=800,
+            autosize=True,
             margin=dict(l=20, r=20, t=40, b=20)
         )
 
@@ -76,18 +73,27 @@ def ver_grafica_temperature(nodo_id):
         html_grafica = fig.to_html(full_html=True)
 
         # Insertar meta refresh (5s) + link a CSS
-        html_grafica = html_grafica.replace(
-            "<head>",
-            "<head>\n<meta http-equiv='refresh' content='5'/>\n<link rel='stylesheet' href='/static/style.css'>\n"
-        )
-        return html_grafica
+        # Envolver en un contenedor para control de tamaño
+        html_final = f"""
+        <html>
+        <head>
+            <meta http-equiv='refresh' content='5'/>
+            <link rel='stylesheet' href='/static/style.css'>
+        </head>
+        <body>
+            <div class="graph-container">
+                {html_grafica}
+            </div>
+        </body>
+        </html>
+        """
+        return html_final
 
     except Exception as e:
         return jsonify({"error": f"Error generando gráfica: {e}"})
 
 @app.route('/graficas/<nodo_id>/humidity')
 def ver_grafica_humidity(nodo_id):
-    """Genera la gráfica de humedad forzando tamaño grande (1400x800 px)."""
     try:
         node_id_int = int(nodo_id.split("_")[-1])
         datos = obtener_mediciones_por_nodo(node_id_int)
@@ -107,25 +113,31 @@ def ver_grafica_humidity(nodo_id):
         )
 
         fig.update_layout(
-            autosize=False,
-            width=1400,
-            height=800,
+            autosize=True,
             margin=dict(l=20, r=20, t=40, b=20)
         )
 
         html_grafica = fig.to_html(full_html=True)
-        html_grafica = html_grafica.replace(
-            "<head>",
-            "<head>\n<meta http-equiv='refresh' content='5'/>\n<link rel='stylesheet' href='/static/style.css'>\n"
-        )
-        return html_grafica
+        html_final = f"""
+        <html>
+        <head>
+            <meta http-equiv='refresh' content='5'/>
+            <link rel='stylesheet' href='/static/style.css'>
+        </head>
+        <body>
+            <div class="graph-container">
+                {html_grafica}
+            </div>
+        </body>
+        </html>
+        """
+        return html_final
 
     except Exception as e:
         return jsonify({"error": f"Error generando gráfica: {e}"})
 
 @app.route('/graficas/<nodo_id>/pressure')
 def ver_grafica_pressure(nodo_id):
-    """Genera la gráfica de presión forzando tamaño grande (1400x800 px)."""
     try:
         node_id_int = int(nodo_id.split("_")[-1])
         datos = obtener_mediciones_por_nodo(node_id_int)
@@ -145,18 +157,25 @@ def ver_grafica_pressure(nodo_id):
         )
 
         fig.update_layout(
-            autosize=False,
-            width=1400,
-            height=800,
+            autosize=True,
             margin=dict(l=20, r=20, t=40, b=20)
         )
 
         html_grafica = fig.to_html(full_html=True)
-        html_grafica = html_grafica.replace(
-            "<head>",
-            "<head>\n<meta http-equiv='refresh' content='5'/>\n<link rel='stylesheet' href='/static/style.css'>\n"
-        )
-        return html_grafica
+        html_final = f"""
+        <html>
+        <head>
+            <meta http-equiv='refresh' content='5'/>
+            <link rel='stylesheet' href='/static/style.css'>
+        </head>
+        <body>
+            <div class="graph-container">
+                {html_grafica}
+            </div>
+        </body>
+        </html>
+        """
+        return html_final
 
     except Exception as e:
         return jsonify({"error": f"Error generando gráfica: {e}"})
