@@ -15,8 +15,10 @@
   <h2>Opciones para {{ nodo_id }}</h2>
   <ul>
     <li><a href="/graficas/{{ nodo_id }}/temperature">Temperatura</a></li>
-    <li><a href="/graficas/{{ nodo_id }}/humidity">Humedad</a></li>
-    <li><a href="/graficas/{{ nodo_id }}/pressure">Presión</a></li>
+    {% if not es_exterior %}
+      <li><a href="/graficas/{{ nodo_id }}/humidity">Humedad</a></li>
+      <li><a href="/graficas/{{ nodo_id }}/pressure">Presión</a></li>
+    {% endif %}
   </ul>
 </div>
 

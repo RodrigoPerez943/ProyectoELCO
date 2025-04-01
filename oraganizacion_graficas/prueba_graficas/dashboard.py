@@ -44,7 +44,14 @@ def index():
 @app.route('/seleccionar_grafica/<nodo_id>')
 def seleccionar_grafica(nodo_id):
     """Página para seleccionar qué gráfica ver."""
-    return render_template("seleccionar_grafica.html", nodo_id=nodo_id)
+
+    node_id_int = int(nodo_id.split("_")[-1])
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT ext FROM mediciones WHERE node_id=?", (node_id_int,))
+    resultado = cursor.fetchone()
+    es_exterior = resultado[0] == 1 if resultado else False
+    return render_template("seleccionar_grafica.html", nodo_id=nodo_id, es_exterior=es_exterior)
 
 @app.route('/graficas/<nodo_id>/temperature')
 def ver_grafica_temperature(nodo_id):
