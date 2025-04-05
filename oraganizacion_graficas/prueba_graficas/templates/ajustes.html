@@ -1,18 +1,9 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Ajustes de Intervalo</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
-<header>
-  <h1>⏳ Configurar Intervalo de Medición</h1>
-  <a href="/" class="back-button">🔙 Volver</a>
-</header>
+{% block title %}Ajustes de Intervalo{% endblock %}
+{% block header_title %}⚙️ Configuración de Intervalo{% endblock %}
 
-<div class="container">
+{% block content %}
   <form action="/ajustes" method="POST">
     <label for="horas">Horas:</label>
     <select id="horas" name="horas">
@@ -35,15 +26,20 @@
       {% endfor %}
     </select>
 
-    <button type="submit">Guardar</button>
+    <button type="submit" style="margin-top: 1rem;">💾 Guardar</button>
   </form>
 
-  <p>⏳ <b>Intervalo actual:</b> {{ intervalo // 3600 }} h {{ (intervalo % 3600) // 60 }} m {{ intervalo % 60 }} s</p>
-</div>
+  <p style="margin-top: 1.5rem;">
+    <b>Intervalo actual:</b>
+    {{ intervalo // 3600 }} h {{ (intervalo % 3600) // 60 }} m {{ intervalo % 60 }} s
+  </p>
+{% endblock %}
 
-<footer>
-  <p>© 2025 - Proyecto de Nodos</p>
-</footer>
-
-</body>
-</html>
+{% block extra_scripts %}
+<script>
+  const isDark = localStorage.getItem('dark-mode') === 'true';
+  if (isDark) {
+    document.body.classList.add('dark-mode');
+  }
+</script>
+{% endblock %}

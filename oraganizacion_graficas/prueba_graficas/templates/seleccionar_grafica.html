@@ -1,30 +1,15 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Seleccionar Gráfica</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
-<header>
-  <h1>Seleccionar Gráfica</h1>
-</header>
+{% block title %}Seleccionar Gráfica{% endblock %}
+{% block header_title %}Seleccionar Gráfica{% endblock %}
 
-<div class="container">
+{% block content %}
   <h2>Opciones para {{ nodo_id }}</h2>
   <ul>
-    <li><a href="/graficas/{{ nodo_id }}/temperature">Temperatura</a></li>
+    <li><a href="/graficas/{{ nodo_id }}/temperature"> Temperatura</a></li>
     {% if not es_exterior %}
-      <li><a href="/graficas/{{ nodo_id }}/humidity">Humedad</a></li>
-      <li><a href="/graficas/{{ nodo_id }}/pressure">Presión</a></li>
+      <li><a href="/graficas/{{ nodo_id }}/humidity"> Humedad</a></li>
+      <li><a href="/graficas/{{ nodo_id }}/pressure"> Presión</a></li>
     {% endif %}
   </ul>
-</div>
-
-<footer>
-  <p>© 2025 - Mi Proyecto de Nodos</p>
-</footer>
-
-</body>
-</html>
+{% endblock %}

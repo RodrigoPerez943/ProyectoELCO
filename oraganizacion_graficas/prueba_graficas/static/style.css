@@ -6,7 +6,7 @@
   font-family: "Segoe UI", Arial, sans-serif;
 }
 
-/* 🔹 Fondo general con degradado */
+/* 🔹 Fondo general */
 body {
   min-height: 100vh;
   background: linear-gradient(145deg, #f0f4f7, #dfe7ed);
@@ -15,6 +15,52 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
+}
+
+/* 🔹 Modo oscuro */
+body.dark-mode {
+  background: linear-gradient(145deg, #2c2f34, #3b3f45);
+  color: #e0e0e0;
+}
+
+body.dark-mode header,
+body.dark-mode .container,
+body.dark-mode footer {
+  background-color: #393d43;
+  color: #e0e0e0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+body.dark-mode ul li {
+  background: #4a4f57;
+}
+
+body.dark-mode ul li:hover {
+  background: #5c626c;
+}
+
+body.dark-mode a {
+  color: #76baff;
+}
+
+body.dark-mode a:hover {
+  color: #9cd3ff;
+}
+
+body.dark-mode select,
+body.dark-mode button {
+  background-color: #555a63;
+  color: #f1f1f1;
+  border: 1px solid #777;
+}
+
+body.dark-mode button:hover {
+  background-color: #777;
+}
+
+body.dark-mode #graph {
+  background-color: #393d43;
+  border-color: #555;
 }
 
 /* 🔹 Cabecera global */
@@ -28,23 +74,6 @@ header {
   position: relative;
 }
 
-/* 🔹 Icono de ajustes ⚙ */
-.settings-icon {
-  font-size: 26px;
-  color: #0d6efd;
-  text-decoration: none;
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  transition: color 0.2s, transform 0.2s;
-}
-
-.settings-icon:hover {
-  color: #ffcc00;
-  transform: scale(1.1);
-}
-
 /* 🔹 Contenedor principal */
 .container {
   width: 90%;
@@ -55,21 +84,6 @@ header {
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
   text-align: center;
-}
-
-/* 🔹 Ajuste para el contenedor de la gráfica */
-.graph-container {
-  width: 95vw; /* 95% del ancho de la pantalla */
-  height: 80vh; /* 80% de la altura de la pantalla */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 🔹 Ajuste para la gráfica dentro del contenedor */
-.graph-container > div {
-  width: 100% !important;
-  height: 100% !important;
 }
 
 /* 🔹 Lista de nodos */
@@ -126,4 +140,120 @@ footer {
   left: 20px;
   top: 50%;
   transform: translateY(-50%);
+}
+
+
+/* 🔹 Modo oscuro toggle (satyamchaudharydev style) */
+#modoOscuroCheckbox {
+  display: block;
+  --width-of-modoOscuroCheckbox: 3.5em;
+  --height-of-modoOscuroCheckbox: 2em;
+  --size-of-icon: 1.4em;
+  --slider-offset: 0.3em;
+  position: relative;
+  width: var(--width-of-modoOscuroCheckbox);
+  height: var(--height-of-modoOscuroCheckbox);
+}
+
+/* Ocultar input original */
+#modoOscuroCheckbox input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Estilo del interruptor */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #f4f4f5;
+  transition: .4s;
+  border-radius: 30px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: var(--size-of-icon);
+  width: var(--size-of-icon);
+  border-radius: 20px;
+  left: var(--slider-offset);
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(40deg,#ff0080,#ff8c00 70%);
+  transition: .4s;
+}
+
+#modoOscuroCheckbox input:checked + .slider {
+  background-color: #303136;
+}
+
+#modoOscuroCheckbox input:checked + .slider:before {
+  left: calc(100% - (var(--size-of-icon) + var(--slider-offset)));
+  background: #303136;
+  box-shadow: inset -3px -2px 5px -2px #8983f7, inset -10px -4px 0 0 #a3dafb;
+}
+
+
+
+/* From Uiverse.io by thomas-m-njuguna */ 
+.btn-cont {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: auto;
+  background-color: #1e1e1e;
+  margin: 0;
+  border: 1px solid #ffff;
+  border-radius: 10px;
+}
+.button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 5px;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+.button:hover .tooltip {
+  background-color: rgba(255, 255, 255, 0.1);
+  visibility: visible;
+  opacity: 1;
+}
+.settings-btn {
+  display: block;
+  transition: transform 0.4s ease-in-out;
+}
+
+.button:hover .settings-btn {
+  animation: rot 2s linear infinite;
+}
+@keyframes rot {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.tooltip {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 5px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+  opacity: 0;
+  transition: opacity 0.3s;
 }
