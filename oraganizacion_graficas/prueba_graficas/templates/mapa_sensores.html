@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mapa de Sensores</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_mapa.css') }}">
+</head>
+<body>
+
+<header>
+<a href="/" class="back-button">← Volver</a>
+<h1>{{ titulo or "Proyecto de Nodos" }}</h1>
+
+        <div class="header-buttons">
+
+            <!-- Botón subir nueva imagen -->
+            <form id="formNuevaImagen" method="POST" enctype="multipart/form-data">
+              <input type="file" name="imagen" id="inputImagen" style="display: none;" onchange="document.getElementById('formNuevaImagen').submit()">
+              <div class="btn-cont">
+                <button type="button" class="button" title="Subir nueva imagen" onclick="document.getElementById('inputImagen').click()">
+                  🖼️
+                  <span class="tooltip">Nueva imagen</span>
+                </button>
+              </div>
+            </form>
+          
+            <!-- Botón guardar posiciones -->
+            <div class="btn-cont">
+              <button class="button" title="Guardar posiciones" onclick="guardarPosiciones()">
+                💾
+                <span class="tooltip">Guardar posiciones</span>
+              </button>
+            </div>
+          
+            <!-- Botón Ajustes -->
+            <form action="/ajustes">
+              <div class="btn-cont">
+                <button class="button" title="Ajustes">⚙️</button>
+              </div>
+            </form>
+          
+            <!-- Botón modo claro/oscuro -->
+            <label id="modoOscuroCheckbox">
+              <input type="checkbox">
+              <span class="slider"></span>
+            </label>
+          
+          </div>
+          
+
+</header>
+
+<main>
+
+  {% if imagen_url %}
+  <div class="contenedor" id="plano">
+    <img src="{{ imagen_url }}">
+    {% for sensor in nodos %}
+      {% set pos = posiciones.get(sensor.id|string) %}
+      {% if pos %}
+      <div class="sensor" data-id="{{ sensor.id }}" style="left: {{ pos.x }}%; top: {{ pos.y }}%;">
+        <strong>{{ nombres.get(sensor.id|string, "Sensor " ~ sensor.id) }}</strong><br>
+        <span class="temp">{{ sensor.temp }}°C</span>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const checkbox = document.querySelector('#modoOscuroCheckbox input[type="checkbox"]');
+  if (localStorage.getItem('dark-mode') === 'true') {
+    document.body.classList.add('dark-mode');
+    checkbox.checked = true;
+  }
+  checkbox.addEventListener('change', () => {
+    document.body.classList.toggle('dark-mode', checkbox.checked);
+    localStorage.setItem('dark-mode', checkbox.checked);
+  });
+
+  // Drag sensors
+  let selected = null, offsetX = 0, offsetY = 0;
+  const plano = document.getElementById("plano");
+  document.querySelectorAll('.sensor').forEach(sensor => {
+    sensor.addEventListener('mousedown', function(e) {
+      selected = sensor;
+      const rect = plano.getBoundingClientRect();
+      const sRect = sensor.getBoundingClientRect();
+      offsetX = e.clientX - sRect.left;
+      offsetY = e.clientY - sRect.top;
+      e.preventDefault();
+    });
+  });
+  document.addEventListener('mousemove', e => {
+    if (!selected) return;
+    const rect = plano.getBoundingClientRect();
+    selected.style.left = ((e.clientX - rect.left - offsetX) / rect.width * 100) + '%';
+    selected.style.top = ((e.clientY - rect.top - offsetY) / rect.height * 100) + '%';
+  });
+  document.addEventListener('mouseup', () => selected = null);
+});
+
+function guardarPosiciones() {
+  const sensores = document.querySelectorAll('.sensor');
+  const posiciones = {};
+  sensores.forEach(sensor => {
+    const id = sensor.dataset.id;
+    posiciones[id] = {
+      x: parseFloat(sensor.style.left),
+      y: parseFloat(sensor.style.top)
+    };
+  });
+  fetch("/guardar_posiciones", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(posiciones)
+  })
+  .then(res => res.text())
+  .then(msg => alert(msg))
+  .catch(err => alert("❌ Error al guardar posiciones"));
+}
+
+
+// 🔁 Actualizar temperatura cada 5 segundos
+setInterval(() => {
+  fetch("/api/temperaturas")
+    .then(res => res.json())
+    .then(data => {
+      document.querySelectorAll(".sensor").forEach(sensor => {
+        const id = sensor.dataset.id;
+        const nueva = data[id];
+        if (nueva !== undefined) {
+          sensor.querySelector(".temp").textContent = `${nueva}°C`;
+        }
+      });
+    });
+}, 5000);
+
+setInterval(() => {
+    window.location.reload();
+  }, 10000);
+
+</script>
+
+</body>
+</html>

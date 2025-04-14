@@ -29,6 +29,22 @@ def obtener_node_id(mac_address, mac_mapping):
         new_node_id = len(mac_mapping) + 1
         mac_mapping[mac_address] = new_node_id
         guardar_mac_mapping(mac_mapping)
+
+        # Generar posición por defecto
+        pos_file = os.path.join(BASE_DIR, "sensor_positions.json")
+        if os.path.exists(pos_file):
+            with open(pos_file, "r") as f:
+                posiciones = json.load(f)
+        else:
+            posiciones = {}
+
+        if str(new_node_id) not in posiciones:
+            x = 5 + (new_node_id - 1) * 10 % 90
+            y = 5 + ((new_node_id - 1) * 10 // 90) * 10
+            posiciones[str(new_node_id)] = {"x": x, "y": y}
+            with open(pos_file, "w") as f:
+                json.dump(posiciones, f, indent=4)
+
         return new_node_id
 
 mac_mapping = cargar_mac_mapping()

@@ -234,5 +234,126 @@ def ajustes():
 
     return render_template("ajustes.html", intervalo=intervalo_actual)  # 📌 Enviar intervalo actual a la web
 
+@app.route('/mapa_sensores', methods=["GET", "POST"])
+def mapa_sensores():
+    UPLOAD_FOLDER = os.path.join(app.static_folder, "uploads")
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+    if request.method == "POST":
+        imagen = request.files.get("imagen")
+        if imagen:
+            imagen.save(os.path.join(UPLOAD_FOLDER, "plano.png"))
+            return redirect(url_for("mapa_sensores"))
+
+    # Cargar última imagen si existe
+    imagen_url = None
+    ruta_imagen = os.path.join(UPLOAD_FOLDER, "plano.png")
+    if os.path.exists(ruta_imagen):
+        imagen_url = "/static/uploads/plano.png"
+
+    # Cargar últimas temperaturas por nodo
+    nodos = []
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT node_id, temperature FROM (
+            SELECT node_id, temperature, MAX(timestamp) AS latest
+            FROM mediciones
+            GROUP BY node_id
+        )
+    ''')
+    for row in cursor.fetchall():
+        nodos.append({"id": row[0], "temp": row[1]})
+    conn.close()
+
+    # Convertir a string los IDs
+    nodos_ids = [str(n["id"]) for n in nodos]
+
+    # ------------------------
+    # ✅ GENERAR NOMBRES SI FALTAN
+    # ------------------------
+
+    nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
+    if os.path.exists(nombres_file):
+        with open(nombres_file, "r") as f:
+            nombres = json.load(f)
+    else:
+        nombres = {}
+
+    for node_id in nodos_ids:
+        if node_id not in nombres:
+            nombres[node_id] = f"Sensor {node_id}"
+
+    with open(nombres_file, "w") as f:
+        json.dump(nombres, f, indent=4)
+
+
+    # ------------------------
+    # ✅ GENERAR POSICIONES SI FALTAN
+    # ------------------------
+
+    pos_file = os.path.join(BASE_DIR, "sensor_positions.json")
+    nodos_ids = [str(n["id"]) for n in nodos]
+
+    if os.path.exists(pos_file):
+        with open(pos_file, "r") as f:
+            posiciones = json.load(f)
+    else:
+        posiciones = {}
+
+    espaciado = 10
+    x, y = 5, 5
+    for node_id in nodos_ids:
+        if node_id not in posiciones:
+            posiciones[node_id] = {"x": x, "y": y}
+            x += espaciado
+            if x > 90:
+                x = 5
+                y += espaciado
+
+    with open(pos_file, "w") as f:
+        json.dump(posiciones, f, indent=4)
+
+    return render_template(
+    "mapa_sensores.html",
+    imagen_url=imagen_url,
+    nodos=nodos,
+    posiciones=posiciones,
+    nombres=nombres)
+
+    
+
+
+
+@app.route('/guardar_posiciones', methods=["POST"])
+def guardar_posiciones():
+    posiciones = request.get_json()
+    pos_file = os.path.join(BASE_DIR, "sensor_positions.json")
+    with open(pos_file, "w") as f:
+        json.dump(posiciones, f, indent=4)
+    return "✅ Posiciones guardadas correctamente."
+
+
+@app.route('/api/temperaturas')
+def api_temperaturas():
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT node_id, temperature
+        FROM (
+            SELECT node_id, temperature, MAX(timestamp) AS latest
+            FROM mediciones
+            GROUP BY node_id
+        )
+    ''')
+    data = {str(row[0]): row[1] for row in cursor.fetchall()}
+    conn.close()
+    return jsonify(data)
+
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
+
+

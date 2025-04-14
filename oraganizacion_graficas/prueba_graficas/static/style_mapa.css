@@ -1,0 +1,193 @@
+/* 🔹 Reset básico + tipografía */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Arial, sans-serif;
+  }
+  
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  body {
+    background: linear-gradient(145deg, #f0f4f7, #dfe7ed);
+    color: #333;
+  }
+  
+  body.dark-mode {
+    background: linear-gradient(145deg, #2c2f34, #3b3f45);
+    color: #e0e0e0;
+  }
+  
+  /* 🔹 Header fijo */
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 1rem;
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+  
+  body.dark-mode header {
+    background-color: rgba(45, 48, 55, 0.9);
+    color: #eee;
+  }
+  
+  /* 🔹 Botón volver */
+  .back-button {
+    font-size: 16px;
+    color: white;
+    text-decoration: none;
+    padding: 8px 12px;
+    background-color: #0d6efd;
+    border-radius: 5px;
+  }
+  
+  /* 🔹 Botones del header */
+  .header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  /* 🔹 Modo oscuro toggle */
+  #modoOscuroCheckbox {
+    --width-of-modoOscuroCheckbox: 3.5em;
+    --height-of-modoOscuroCheckbox: 2em;
+    --size-of-icon: 1.4em;
+    --slider-offset: 0.3em;
+    position: relative;
+    width: var(--width-of-modoOscuroCheckbox);
+    height: var(--height-of-modoOscuroCheckbox);
+  }
+  
+  #modoOscuroCheckbox input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #f4f4f5;
+    transition: .4s;
+    border-radius: 30px;
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: var(--size-of-icon);
+    width: var(--size-of-icon);
+    border-radius: 20px;
+    left: var(--slider-offset);
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(40deg,#ff0080,#ff8c00 70%);
+    transition: .4s;
+  }
+  
+  #modoOscuroCheckbox input:checked + .slider {
+    background-color: #303136;
+  }
+  
+  #modoOscuroCheckbox input:checked + .slider:before {
+    left: calc(100% - (var(--size-of-icon) + var(--slider-offset)));
+    background: #303136;
+    box-shadow: inset -3px -2px 5px -2px #8983f7, inset -10px -4px 0 0 #a3dafb;
+  }
+  
+  /* 🔹 Mapa full screen */
+  main {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    margin-top: 70px;
+  }
+  
+  #plano {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  #plano img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  
+  /* 🔹 Sensores */
+  .sensor {
+    position: absolute;
+    background-color: rgba(255, 0, 0, 0.75);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: grab;
+    user-select: none;
+    z-index: 2;
+  }
+  
+  body.dark-mode .sensor {
+    background-color: rgba(255, 100, 100, 0.8);
+  }
+  
+  /* 🔹 Subir imagen */
+  .upload-bar {
+    position: absolute;
+    top: 70px;
+    left: 20px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  
+  body.dark-mode .upload-bar {
+    background: rgba(40, 42, 48, 0.9);
+  }
+  
+  /* 🔹 Botón guardar */
+  .fixed-button {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 100;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .fixed-button:hover {
+    background-color: #084fbb;
+  }
+  
+  /* 🔹 Footer */
+  footer {
+    display: none;
+  }
+  
