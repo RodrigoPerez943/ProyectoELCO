@@ -39,7 +39,26 @@ def index():
             nodos.add(f"sensor_{row[0]}")    
     conn.close()
 
-    return render_template("index.html", nodos=sorted(nodos))
+        # Cargar nombres de sensores
+    nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
+    if os.path.exists(nombres_file):
+        with open(nombres_file, "r") as f:
+            nombres = json.load(f)
+    else:
+        nombres = {}
+
+    ids = set()
+    
+    # Crear nombre por defecto si falta
+    for node_id in ids:
+        if node_id not in nombres:
+            nombres[node_id] = f"Sensor {node_id}"
+
+    # Guardar actualizados
+    with open(nombres_file, "w") as f:
+        json.dump(nombres, f, indent=4)
+
+    return render_template("index.html", nodos=sorted(nodos), nombres=nombres)
 
 @app.route('/seleccionar_grafica/<nodo_id>')
 def seleccionar_grafica(nodo_id):
@@ -51,7 +70,18 @@ def seleccionar_grafica(nodo_id):
     cursor.execute("SELECT ext FROM mediciones WHERE node_id=?", (node_id_int,))
     resultado = cursor.fetchone()
     es_exterior = resultado[0] == 1 if resultado else False
-    return render_template("seleccionar_grafica.html", nodo_id=nodo_id, es_exterior=es_exterior)
+    
+
+    # AÑADIR LOS NOMBRES DEL SENSOR JSON
+    nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
+    if os.path.exists(nombres_file):
+        with open(nombres_file, "r") as f:
+            nombres = json.load(f)
+    else:
+        nombres = {}
+
+    nombre_sensor = nombres.get(str(node_id_int), f"Sensor {node_id_int}")
+    return render_template("seleccionar_grafica.html", nodo_id=nodo_id, es_exterior=es_exterior,nombre=nombre_sensor)
 
 @app.route('/graficas/<nodo_id>/temperature')
 def ver_grafica_temperature(nodo_id):
@@ -64,88 +94,46 @@ def ver_grafica_temperature(nodo_id):
         df = pd.DataFrame(datos, columns=["timestamp", "temperature", "humidity", "pressure", "ext"])
         df["timestamp"] = pd.to_datetime(df["timestamp"])
 
-        # Crear figura con Plotly
+        # Cargar nombre personalizado
+        nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
+        if os.path.exists(nombres_file):
+            with open(nombres_file, "r") as f:
+                nombres = json.load(f)
+        else:
+            nombres = {}
+
+        nombre = nombres.get(str(node_id_int), f"Sensor {node_id_int}")
+
+        # Crear gráfica
         fig = px.line(
             df,
             x="timestamp",
             y="temperature",
-            title=f"Temperatura del Nodo {nodo_id}",
+            title=f"Temperatura de {nombre}",
             labels={"timestamp": "Hora del día", "temperature": "Temperatura (°C)"},
             markers=True
         )
-
-        # Forzar un tamaño grande en píxeles:
+        
         fig.update_layout(
             autosize=True,
             margin=dict(l=20, r=20, t=40, b=20)
         )
 
-        # Generar HTML
-        html_grafica = fig.to_html(full_html=True)
+        fig.update_traces(name=f"Temperatura - {nombre}")
 
-        # Insertar meta refresh (5s) + link a CSS
-        # Envolver en un contenedor para control de tamaño
-        html_final = f"""
-        <html>
-        <head>
-            <meta http-equiv='refresh' content='5'/>
-            <link rel='stylesheet' href='/static/style.css'>
-        </head>
-        <body>
-            <div class="graph-container">
-                {html_grafica}
-            </div>
-        </body>
-        </html>
-        """
-        return html_final
+        # Exportar a HTML parcial con responsive=True
+        html_grafica = fig.to_html(full_html=False, include_plotlyjs="cdn", config={"responsive": True})
+
+        # Usar plantilla con estilo unificado
+        return render_template(
+            "grafica.html",
+            grafica=html_grafica,
+            titulo=f"Temperatura de {nombre}"
+        )
 
     except Exception as e:
         return jsonify({"error": f"Error generando gráfica: {e}"})
 
-@app.route('/graficas/<nodo_id>/humidity')
-def ver_grafica_humidity(nodo_id):
-    try:
-        node_id_int = int(nodo_id.split("_")[-1])
-        datos = obtener_mediciones_por_nodo(node_id_int)
-        if not datos:
-            return jsonify({"error": f"No hay datos disponibles para el nodo {nodo_id}"})
-
-        df = pd.DataFrame(datos, columns=["timestamp", "temperature", "humidity", "pressure", "ext"])
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
-
-        fig = px.line(
-            df,
-            x="timestamp",
-            y="humidity",
-            title=f"Humedad medida por el Nodo {nodo_id}",
-            labels={"timestamp": "Hora del día", "humidity": "Humedad (g/m^3)"},
-            markers=True
-        )
-
-        fig.update_layout(
-            autosize=True,
-            margin=dict(l=20, r=20, t=40, b=20)
-        )
-
-        html_grafica = fig.to_html(full_html=True)
-        html_final = f"""
-        <html>
-        <head>
-            <meta http-equiv='refresh' content='5'/>
-            <link rel='stylesheet' href='/static/style.css'>
-        </head>
-        <body>
-            <div class="graph-container">
-                {html_grafica}
-            </div>
-        </body>
-        </html>
-        """
-        return html_final
-
-    except Exception as e:
-        return jsonify({"error": f"Error generando gráfica: {e}"})
 
 @app.route('/graficas/<nodo_id>/pressure')
 def ver_grafica_pressure(nodo_id):
@@ -158,38 +146,93 @@ def ver_grafica_pressure(nodo_id):
         df = pd.DataFrame(datos, columns=["timestamp", "temperature", "humidity", "pressure", "ext"])
         df["timestamp"] = pd.to_datetime(df["timestamp"])
 
+        nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
+        if os.path.exists(nombres_file):
+            with open(nombres_file, "r") as f:
+                nombres = json.load(f)
+        else:
+            nombres = {}
+
+        nombre = nombres.get(str(node_id_int), f"Sensor {node_id_int}")
+
         fig = px.line(
             df,
             x="timestamp",
             y="pressure",
-            title=f"Presión medida por el Nodo {nodo_id}",
             labels={"timestamp": "Hora del día", "pressure": "Presión (hPa)"},
             markers=True
         )
 
         fig.update_layout(
+            title=f"Presión medida por {nombre}",
             autosize=True,
             margin=dict(l=20, r=20, t=40, b=20)
         )
 
-        html_grafica = fig.to_html(full_html=True)
-        html_final = f"""
-        <html>
-        <head>
-            <meta http-equiv='refresh' content='5'/>
-            <link rel='stylesheet' href='/static/style.css'>
-        </head>
-        <body>
-            <div class="graph-container">
-                {html_grafica}
-            </div>
-        </body>
-        </html>
-        """
-        return html_final
+        fig.update_traces(name=f"Presión - {nombre}")
+
+        html_grafica = fig.to_html(full_html=False, include_plotlyjs="cdn", config={"responsive": True})
+
+        return render_template(
+            "grafica.html",
+            grafica=html_grafica,
+            titulo=f"Presión medida por {nombre}",
+            nodo_id=nodo_id
+        )
 
     except Exception as e:
         return jsonify({"error": f"Error generando gráfica: {e}"})
+
+    
+@app.route('/graficas/<nodo_id>/humidity')
+def ver_grafica_humidity(nodo_id):
+    try:
+        node_id_int = int(nodo_id.split("_")[-1])
+        datos = obtener_mediciones_por_nodo(node_id_int)
+        if not datos:
+            return jsonify({"error": f"No hay datos disponibles para el nodo {nodo_id}"})
+
+        df = pd.DataFrame(datos, columns=["timestamp", "temperature", "humidity", "pressure", "ext"])
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+
+        # Cargar nombre personalizado
+        nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
+        if os.path.exists(nombres_file):
+            with open(nombres_file, "r") as f:
+                nombres = json.load(f)
+        else:
+            nombres = {}
+
+        nombre = nombres.get(str(node_id_int), f"Sensor {node_id_int}")
+
+        fig = px.line(
+            df,
+            x="timestamp",
+            y="humidity",
+            labels={"timestamp": "Hora del día", "humidity": "Humedad (%)"},
+            markers=True
+        )
+
+        fig.update_layout(
+            title=f"Humedad medida por {nombre}",
+            autosize=True,
+            margin=dict(l=20, r=20, t=40, b=20)
+        )
+
+        fig.update_traces(name=f"Humedad - {nombre}")
+
+        html_grafica = fig.to_html(full_html=False, include_plotlyjs="cdn", config={"responsive": True})
+
+        return render_template(
+            "grafica.html",
+            grafica=html_grafica,
+            titulo=f"Humedad medida por {nombre}",
+            nodo_id=nodo_id
+        )
+
+    except Exception as e:
+        return jsonify({"error": f"Error generando gráfica: {e}"})
+
 
 def enviar_intervalo_uart(intervalo):
     """Envia el intervalo de medición por UART a la Raspberry Pi."""
@@ -214,25 +257,45 @@ def obtener_intervalo():
             return data.get("intervalo", 60)
     return 60  # 📌 Valor por defecto
 
+EMAIL_CONFIG_FILE = os.path.join(BASE_DIR, "email_config.json")
+
 @app.route('/ajustes', methods=["GET", "POST"])
 def ajustes():
-    """Página de configuración del intervalo de medición."""
-    intervalo_actual = obtener_intervalo()  # 📌 Obtener intervalo actual
+    intervalo_actual = obtener_intervalo()
+
+    # Cargar configuración actual de correo
+    if os.path.exists(EMAIL_CONFIG_FILE):
+        with open(EMAIL_CONFIG_FILE, "r") as f:
+            email_config = json.load(f)
+    else:
+        email_config = {}
 
     if request.method == "POST":
-        horas = int(request.form.get("horas", 0))
-        minutos = int(request.form.get("minutos", 0))
-        segundos = int(request.form.get("segundos", 0))
+        # Configuración del intervalo
+        if "guardar_email" not in request.form:
+            horas = int(request.form.get("horas", 0))
+            minutos = int(request.form.get("minutos", 0))
+            segundos = int(request.form.get("segundos", 0))
+            nuevo_intervalo = horas * 3600 + minutos * 60 + segundos
+            if nuevo_intervalo > 0:
+                guardar_intervalo(nuevo_intervalo)
+                enviar_intervalo_uart(nuevo_intervalo)
 
-        nuevo_intervalo = horas * 3600 + minutos * 60 + segundos  # Convertir a segundos
+        # Configuración del email
+        if "guardar_email" in request.form:
+            nueva_config = {
+                "sender": request.form.get("sender", ""),
+                "password": request.form.get("password", ""),
+                "recipient": request.form.get("recipient", ""),
+                "smtp_server": request.form.get("smtp_server", ""),
+                "smtp_port": int(request.form.get("smtp_port", 587))
+            }
+            with open(EMAIL_CONFIG_FILE, "w") as f:
+                json.dump(nueva_config, f, indent=4)
 
-        if nuevo_intervalo > 0:
-            guardar_intervalo(nuevo_intervalo)  # 📌 Guardar intervalo
-            enviar_intervalo_uart(nuevo_intervalo)  # 📡 Enviar por UART
-            print(f"✅ Intervalo actualizado: {nuevo_intervalo} segundos")
         return redirect(url_for("ajustes"))
 
-    return render_template("ajustes.html", intervalo=intervalo_actual)  # 📌 Enviar intervalo actual a la web
+    return render_template("ajustes.html", intervalo=intervalo_actual, email_config=email_config)
 
 @app.route('/mapa_sensores', methods=["GET", "POST"])
 def mapa_sensores():
@@ -320,7 +383,6 @@ def mapa_sensores():
     nodos=nodos,
     posiciones=posiciones,
     nombres=nombres)
-
     
 
 
@@ -350,6 +412,90 @@ def api_temperaturas():
     conn.close()
     return jsonify(data)
 
+
+@app.route('/nombres_sensores', methods=["GET", "POST"])
+def nombres_sensores():
+    nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
+
+    # 🔹 Cargar nombres existentes
+    if os.path.exists(nombres_file):
+        with open(nombres_file, "r") as f:
+            nombres = json.load(f)
+    else:
+        nombres = {}
+
+    # 🔹 Leer node_id y ext (0: interior, 1: exterior)
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT node_id, ext FROM mediciones")
+    nodos_db = cursor.fetchall()
+    conn.close()
+
+    # 🔹 Generar estructura: { id: {"nombre": ..., "ext": ...} }
+    nodos = {}
+    for node_id, ext in nodos_db:
+        node_id = str(node_id)
+        nodos[node_id] = {
+            "nombre": nombres.get(node_id, f"Sensor {node_id}"),
+            "ext": bool(ext)
+        }
+
+    # 🔹 Si se ha enviado el formulario, actualizar nombres
+    if request.method == "POST":
+        nuevos_nombres = request.form.to_dict()
+        solo_nombres = {k: v for k, v in nuevos_nombres.items()}
+        with open(nombres_file, "w") as f:
+            json.dump(solo_nombres, f, indent=4)
+        return redirect(url_for("nombres_sensores"))
+
+    return render_template("nombres_sensores.html", nodos=nodos)
+
+@app.route("/alertas", methods=["GET", "POST"])
+def alertas_config():
+    alertas_file = os.path.join(BASE_DIR, "alertas_config.json")
+    nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
+
+    # 🔹 Cargar nombres personalizados
+    if os.path.exists(nombres_file):
+        with open(nombres_file, "r") as f:
+            nombres = json.load(f)
+    else:
+        nombres = {}
+
+    # 🔹 Cargar alertas existentes
+    if os.path.exists(alertas_file):
+        with open(alertas_file, "r") as f:
+            alertas = json.load(f)
+    else:
+        alertas = {}
+
+    # 🔹 Obtener nodos existentes de la base de datos
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT node_id FROM mediciones")
+    ids_db = sorted(set(str(row[0]) for row in cursor.fetchall()))
+    conn.close()
+
+    # 🔹 Generar estructura de nombres si falta alguno
+    for node_id in ids_db:
+        if node_id not in nombres:
+            nombres[node_id] = f"Sensor {node_id}"
+
+    if request.method == "POST":
+        nuevas = {}
+        for node_id in ids_db:
+            min_val = request.form.get(f"min_{node_id}")
+            max_val = request.form.get(f"max_{node_id}")
+            if min_val or max_val:
+                nuevas[node_id] = {
+                    "min": float(min_val) if min_val else None,
+                    "max": float(max_val) if max_val else None
+                }
+        with open(alertas_file, "w") as f:
+            json.dump(nuevas, f, indent=4)
+        return redirect(url_for("alertas_config"))
+
+    return render_template("alertas.html", alertas=alertas, nombres=nombres)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Nombres de Sensores{% endblock %}
+{% block header_title %}📝 Nombres de Sensores{% endblock %}
+
+{% block content %}
+  <form method="POST">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Tipo</th>
+          <th>Nombre</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for id, datos in nodos.items() %}
+        <tr>
+          <td>{{ id }}</td>
+          <td>{{ "Exterior 🌤️" if datos.ext else "Interior 🏠" }}</td>
+          <td>
+            <input type="text" name="{{ id }}" value="{{ datos.nombre }}" style="width: 100%; padding: 5px;">
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button type="submit" style="margin-top: 1rem;">💾 Guardar nombres</button>
+  </form>
+{% endblock %}

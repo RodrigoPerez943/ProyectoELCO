@@ -2,6 +2,9 @@ import os
 import csv
 import json
 from database import insertar_medicion, conectar_db, crear_tabla
+from alertas import verificar_alertas
+from alertas import enviar_alerta_email
+
 
 # Crear la tabla si no existe
 crear_tabla()
@@ -90,8 +93,14 @@ def procesar_mediciones():
             # Insertar en la base de datos
             insertar_medicion(timestamp, node_id, temperature, humidity, pressure, ext)
 
+            # 🚨 Verificar alertas tras insertar la medición
+            verificar_alertas(node_id, temperature)
+
         except Exception as e:
-            print(f"⚠️ Error al procesar una línea del buffer: {e}")
+            mensaje = f"⚠️ Error al procesar una línea del buffer: {e}"
+            if 'node_id' in locals():
+                mensaje += f" (Nodo {node_id})"
+            print(mensaje)
 
     if batch:
         with open(CSV_FILE, mode="a", newline="") as file:

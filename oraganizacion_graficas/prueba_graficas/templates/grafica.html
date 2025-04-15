@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+{% block header_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+  <!-- Refresco automático -->
+  <meta http-equiv="refresh" content="5" />
+
+  <!-- Contenedor más grande -->
+  <div class="graph-container" style="width: 100%; margin: auto;">
+    {{ grafica | safe }}
+  </div>
+  
+{% endblock %}

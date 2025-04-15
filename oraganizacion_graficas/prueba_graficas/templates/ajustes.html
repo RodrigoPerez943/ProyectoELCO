@@ -33,7 +33,51 @@
     <b>Intervalo actual:</b>
     {{ intervalo // 3600 }} h {{ (intervalo % 3600) // 60 }} m {{ intervalo % 60 }} s
   </p>
+
+
+  <hr style="margin-top: 2rem;">
+
+  <div class="btn-cont" style="margin: 2rem auto 0; width: fit-content;">
+    <a href="{{ url_for('nombres_sensores') }}">
+      <button class="button" type="button" title="Editar nombres">📝 Editar nombres de sensores</button>
+    </a>
+  </div>
+
+
+  <hr style="margin-top: 2rem;">
+
+<div class="btn-cont" style="margin: 2rem auto 0; width: fit-content;">
+  <a href="{{ url_for('alertas_config') }}">
+    <button class="button" type="button" title="Configurar alertas">🚨 Configurar alertas</button>
+  </a>
+</div>
+
+<hr style="margin: 2rem 0;">
+
+<h2>📧 Configuración de correo</h2>
+<form method="POST">
+  <label>Correo emisor:</label>
+  <input type="email" name="sender" value="{{ email_config.sender or '' }}"><br><br>
+
+  <label>Contraseña:</label>
+  <input type="password" name="password" value="{{ email_config.password or '' }}"><br><br>
+
+  <label>Correo receptor:</label>
+  <input type="email" name="recipient" value="{{ email_config.recipient or '' }}"><br><br>
+
+  <label>Servidor SMTP:</label>
+  <input type="text" name="smtp_server" value="{{ email_config.smtp_server or '' }}"><br><br>
+
+  <label>Puerto SMTP:</label>
+  <input type="number" name="smtp_port" value="{{ email_config.smtp_port or 587 }}"><br><br>
+
+  <button type="submit" name="guardar_email" value="1">💾 Guardar configuración de correo</button>
+</form>
+
+
 {% endblock %}
+
+
 
 {% block extra_scripts %}
 <script>

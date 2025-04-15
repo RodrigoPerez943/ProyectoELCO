@@ -4,11 +4,17 @@
 {% block header_title %}Lista de Nodos{% endblock %}
 
 {% block content %}
-  <ul>
-    {% for nodo in nodos %}
-      <li><a href="/seleccionar_grafica/{{ nodo }}"> {{ nodo }}</a></li>
-    {% endfor %}
-  </ul>
+<ul>
+  {% for nodo in nodos %}
+    {% set node_id = nodo.split('_')[-1] %}
+    <li>
+      <a href="{{ url_for('seleccionar_grafica', nodo_id=nodo) }}">
+        {{ nombres.get(node_id, nodo) }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>
+
 {% endblock %}
 
 {% block extra_scripts %}

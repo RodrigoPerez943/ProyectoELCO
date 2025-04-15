@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Configuración de Alertas{% endblock %}
+{% block header_title %}🚨 Alertas por Sensor{% endblock %}
+
+{% block content %}
+  <form method="POST" action="{{ url_for('alertas_config') }}">
+    <div class="alerta-wrapper">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Temperatura mínima (°C)</th>
+            <th>Temperatura máxima (°C)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for node_id, nombre in nombres.items() %}
+          <tr>
+            <td><strong>{{ nombre }}</strong></td>
+            <td>
+              <input type="number" name="min_{{ node_id }}" step="0.1" value="{{ alertas[node_id]['min'] if node_id in alertas else '' }}">
+            </td>
+            <td>
+              <input type="number" name="max_{{ node_id }}" step="0.1" value="{{ alertas[node_id]['max'] if node_id in alertas else '' }}">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 2rem;">
+      <button class="button" type="submit">💾 Guardar alertas</button>
+    </div>
+  </form>
+{% endblock %}
+
