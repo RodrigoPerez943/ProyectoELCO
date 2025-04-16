@@ -26,7 +26,7 @@
       {% endfor %}
     </select>
 
-    <button type="submit" style="margin-top: 1rem;">💾 Guardar</button>
+    <button class="button" type="submit" style="margin-top: 1rem;">💾 Guardar</button>
   </form>
 
   <p style="margin-top: 1.5rem;">
@@ -34,6 +34,43 @@
     {{ intervalo // 3600 }} h {{ (intervalo % 3600) // 60 }} m {{ intervalo % 60 }} s
   </p>
 
+  <hr style="margin: 2rem 0;">
+
+  <h2>📬 Envío de resumen por correo</h2>
+  <label>
+    <input type="checkbox" id="resumenCheckbox" {% if email_config.get("resumen_activo") %}checked{% endif %}>
+    Recibir resumen con gráficas medias de todos los sensores
+  </label>
+
+  <hr style="margin-top: 2rem;">
+
+  <h2 style="text-align: center;">🧩 Nodos incluidos en el resumen</h2>
+  <form action="/ajustes" method="POST" style="margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center;">
+    <div class="resumen-box" style="
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 10px;
+      background: #f8f9fa;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem 1.5rem;
+      width: 420px;
+    ">
+      {% for id, nombre in todos_los_nombres.items() %}
+        <label style="font-weight: 500; display: flex; align-items: center; gap: 6px;">
+          <input type="checkbox" name="nodos_resumen" value="{{ id }}"
+            {% if id in nodos_resumen %}checked{% endif %}
+            style="width: 16px; height: 16px; accent-color: #007bff;">
+          {{ nombre }}
+        </label>
+      {% endfor %}
+    </div>
+  
+    <input type="hidden" name="guardar_nodos_resumen" value="1">
+    <button class="button" style="margin-top: 1rem;">💾 Guardar nodos para resumen</button>
+  </form>
 
   <hr style="margin-top: 2rem;">
 
@@ -43,41 +80,36 @@
     </a>
   </div>
 
-
   <hr style="margin-top: 2rem;">
 
-<div class="btn-cont" style="margin: 2rem auto 0; width: fit-content;">
-  <a href="{{ url_for('alertas_config') }}">
-    <button class="button" type="button" title="Configurar alertas">🚨 Configurar alertas</button>
-  </a>
-</div>
+  <div class="btn-cont" style="margin: 2rem auto 0; width: fit-content;">
+    <a href="{{ url_for('alertas_config') }}">
+      <button class="button" type="button" title="Configurar alertas">🚨 Configurar alertas</button>
+    </a>
+  </div>
 
-<hr style="margin: 2rem 0;">
+  <hr style="margin: 2rem 0;">
 
-<h2>📧 Configuración de correo</h2>
-<form method="POST">
-  <label>Correo emisor:</label>
-  <input type="email" name="sender" value="{{ email_config.sender or '' }}"><br><br>
+  <h2>📧 Configuración de correo</h2>
+  <form method="POST">
+    <label>Correo emisor:</label>
+    <input type="email" name="sender" value="{{ email_config.sender or '' }}"><br><br>
 
-  <label>Contraseña:</label>
-  <input type="password" name="password" value="{{ email_config.password or '' }}"><br><br>
+    <label>Contraseña:</label>
+    <input type="password" name="password" value="{{ email_config.password or '' }}"><br><br>
 
-  <label>Correo receptor:</label>
-  <input type="email" name="recipient" value="{{ email_config.recipient or '' }}"><br><br>
+    <label>Correo receptor:</label>
+    <input type="email" name="recipient" value="{{ email_config.recipient or '' }}"><br><br>
 
-  <label>Servidor SMTP:</label>
-  <input type="text" name="smtp_server" value="{{ email_config.smtp_server or '' }}"><br><br>
+    <label>Servidor SMTP:</label>
+    <input type="text" name="smtp_server" value="{{ email_config.smtp_server or '' }}"><br><br>
 
-  <label>Puerto SMTP:</label>
-  <input type="number" name="smtp_port" value="{{ email_config.smtp_port or 587 }}"><br><br>
+    <label>Puerto SMTP:</label>
+    <input type="number" name="smtp_port" value="{{ email_config.smtp_port or 587 }}"><br><br>
 
-  <button type="submit" name="guardar_email" value="1">💾 Guardar configuración de correo</button>
-</form>
-
-
+    <button class="button" type="submit" name="guardar_email" value="1">💾 Guardar configuración de correo</button>
+  </form>
 {% endblock %}
-
-
 
 {% block extra_scripts %}
 <script>
@@ -85,5 +117,23 @@
   if (isDark) {
     document.body.classList.add('dark-mode');
   }
+</script>
+
+<script>
+  const resumenCheckbox = document.getElementById("resumenCheckbox");
+  resumenCheckbox?.addEventListener("change", () => {
+    fetch("/api/resumen_toggle", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ resumen_activo: resumenCheckbox.checked })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log("✅ Resumen actualizado:", data.resumen_activo);
+    })
+    .catch(err => console.error("❌ Error actualizando resumen:", err));
+  });
 </script>
 {% endblock %}

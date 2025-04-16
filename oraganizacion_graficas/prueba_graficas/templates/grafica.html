@@ -4,12 +4,49 @@
 {% block header_title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-  <!-- Refresco automático -->
-  <meta http-equiv="refresh" content="5" />
-
-  <!-- Contenedor más grande -->
-  <div class="graph-container" style="width: 100%; margin: auto;">
-    {{ grafica | safe }}
+  <div id="grafica-container" style="width:100%;">
+    <div id="graph"></div>
   </div>
-  
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const nodoId = "{{ nodo_id }}";
+  const variable = "{{ variable }}";
+
+  function cargarYActualizarGrafica() {
+    fetch(`/api/datos_grafica/${nodoId}/${variable}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.timestamps || data.timestamps.length === 0) {
+          console.warn("⚠️ No hay datos para graficar");
+          return;
+        }
+
+        const trace = {
+          x: data.timestamps,
+          y: data.valores,
+          type: 'scatter',
+          mode: 'lines+markers',
+          name: variable,
+          line: { shape: 'linear' }
+        };
+
+        const layout = {
+          title: `${variable.charAt(0).toUpperCase() + variable.slice(1)} - ${nodoId}`,
+          xaxis: { title: 'Hora del día' },
+          yaxis: { title: variable },
+          margin: { l: 50, r: 20, t: 50, b: 50 }
+        };
+
+        Plotly.react('graph', [trace], layout);
+        console.log("✅ Gráfica actualizada dinámicamente");
+      })
+      .catch(err => console.error("❌ Error al actualizar gráfica:", err));
+  }
+
+  // Cargar al inicio y cada 5 segundos
+  cargarYActualizarGrafica();
+  setInterval(cargarYActualizarGrafica, 5000);
+</script>
 {% endblock %}

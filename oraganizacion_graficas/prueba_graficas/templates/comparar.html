@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Comparar Sensores{% endblock %}
+{% block header_title %}📊 Comparar Sensores{% endblock %}
+
+{% block content %}
+  <style>
+    .form-comparar {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 700px;
+      margin: auto;
+    }
+
+    .form-comparar label {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-comparar .grupo-sensores {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      background-color: #f9f9f9;
+      padding: 1rem;
+      border-radius: 10px;
+    }
+
+    .form-comparar .grupo-variable {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-comparar button {
+      width: 100%;
+      font-size: 1rem;
+    }
+
+    #grafica {
+      max-width: 100%;
+      margin-top: 2rem;
+    }
+
+    /* 🌙 Modo oscuro */
+    body.dark-mode .form-comparar {
+      background-color: #393d43;
+      color: #f0f0f0;
+    }
+
+    body.dark-mode .form-comparar .grupo-sensores {
+      background-color: #2f2f2f;
+      border: 1px solid #555;
+      color: #e0e0e0;
+    }
+
+    body.dark-mode .form-comparar label {
+      color: #f0f0f0;
+    }
+
+    body.dark-mode .form-comparar input[type="checkbox"] {
+      accent-color: #76baff;
+    }
+
+    body.dark-mode .form-comparar select {
+      background-color: #2f2f2f;
+      color: #f0f0f0;
+      border: 1px solid #555;
+    }
+
+    body.dark-mode .form-comparar option {
+      background-color: #393d43;
+      color: #f0f0f0;
+    }
+  </style>
+
+  <form method="POST" class="form-comparar">
+    <div class="grupo-sensores">
+      {% for id in sensores %}
+        <label>
+          <input type="checkbox" name="sensores" value="{{ id }}"
+          {% if id in seleccionados %} checked {% endif %}>
+          {{ nombres.get(id, "Sensor " ~ id) }}
+        </label>
+      {% endfor %}
+    </div>
+
+    <div class="grupo-variable">
+      <label for="variable">Variable a comparar:</label><br>
+      <select id="variable" name="variable" style="width: 100%; padding: 8px; border-radius: 6px;">
+        <option value="temperature" {% if variable == "temperature" %}selected{% endif %}>🌡️ Temperatura</option>
+        <option value="humidity" {% if variable == "humidity" %}selected{% endif %}>💧 Humedad</option>
+        <option value="pressure" {% if variable == "pressure" %}selected{% endif %}>📈 Presión</option>
+      </select>
+    </div>
+
+    <button class="button" type="submit">📊 Comparar</button>
+  </form>
+
+  {% if datos_graficas %}
+    <div id="grafica" style="height: 500px;"></div>
+  {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+  {% if datos_graficas %}
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script type="module">
+    const rawData = {{ datos_graficas | tojson | safe }};
+    const layout = {{ layout | tojson | safe }};
+    const graficaDiv = document.getElementById('grafica');
+    Plotly.react(graficaDiv, rawData, layout);
+  </script>
+  {% endif %}
+{% endblock %}

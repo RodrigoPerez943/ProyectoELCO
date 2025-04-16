@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
 </head>
 <body>
 
@@ -16,6 +18,13 @@
     <!-- 🔹 Botones del header -->
     <div class="header-buttons">
   
+     <!-- Botón de Comparar Graficas -->
+      <form action="/comparar">
+        <div class="btn-cont">
+          <button class="button" title="Comparar Sensores">📊</button>
+        </div>
+      </form>
+
       <!-- Botón Mapa de Sensores -->
       <form action="/mapa_sensores">
         <div class="btn-cont">
@@ -46,9 +55,11 @@
         <span class="slider"></span>
       </label>
   
+      
     </div>
   </header>
   
+
 
 <div class="container">
   {% block content %}{% endblock %}
@@ -70,6 +81,8 @@
     localStorage.setItem('dark-mode', checkbox.checked);
   });
 </script>
+
+{% block extra_scripts %}{% endblock %}
 
 </body>
 </html>

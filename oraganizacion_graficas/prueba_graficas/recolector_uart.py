@@ -94,7 +94,7 @@ def procesar_mediciones():
             insertar_medicion(timestamp, node_id, temperature, humidity, pressure, ext)
 
             # 🚨 Verificar alertas tras insertar la medición
-            verificar_alertas(node_id, temperature)
+            verificar_alertas(node_id, temperature, humidity, pressure)
 
         except Exception as e:
             mensaje = f"⚠️ Error al procesar una línea del buffer: {e}"

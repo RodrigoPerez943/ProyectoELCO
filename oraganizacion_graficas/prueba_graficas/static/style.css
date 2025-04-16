@@ -17,6 +17,13 @@ body {
   justify-content: flex-start;
 }
 
+  .container {
+    max-width: 100% !important;
+    width: 100%;
+    padding: 0;
+  }
+
+
 /* 🔹 Modo oscuro */
 body.dark-mode {
   background: linear-gradient(145deg, #2c2f34, #3b3f45);
@@ -285,4 +292,103 @@ footer {
 .button:hover {
   background-color: #d4d4d4;
   transform: scale(1.02);
+}
+
+/* 🌓 Adaptación a modo oscuro */
+body.dark-mode .resumen-box {
+  background-color: #2c2c2c;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+body.dark-mode .resumen-box input[type="checkbox"] + label {
+  color: #e0e0e0;
+}
+
+body.dark-mode h2 {
+  color: #f0f0f0;
+}
+
+/* 📋 Ajustes específicos para inputs en formularios en modo oscuro */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background-color: #2f2f2f;
+  color: #f1f1f1;
+  border: 1px solid #666;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+  color: #999;
+}
+
+body.dark-mode label {
+  color: #e6e6e6;
+}
+
+/* Ajustes para checkboxes */
+body.dark-mode input[type="checkbox"] {
+  accent-color: #0d6efd;
+}
+
+/* Botones más visibles */
+body.dark-mode .button {
+  background-color: #555;
+  color: #eee;
+  border: 1px solid #999;
+}
+
+body.dark-mode .button:hover {
+  background-color: #666;
+}
+
+/* ✅ Corrección completa para el contenedor de resumen en modo oscuro */
+body.dark-mode .resumen-box {
+  background-color: #2f2f2f !important;
+  color: #e0e0e0 !important;
+  border-color: #555;
+}
+
+/* ✅ Forzar color de texto de los labels dentro del resumen */
+body.dark-mode .resumen-box label {
+  color: #f0f0f0 !important;
+}
+
+/* ✅ Forzar color de los inputs en modo oscuro */
+body.dark-mode .resumen-box input[type="checkbox"] {
+  accent-color: #76baff;
+}
+
+/* ✅ Botón de guardar con contraste */
+body.dark-mode form button.button {
+  background-color: #444 !important;
+  color: #fff !important;
+  border: 1px solid #888;
+}
+
+body.dark-mode form button.button:hover {
+  background-color: #666 !important;
+}
+
+
+/* ✅ Corrección para lista de checkboxes en comparar.html en modo oscuro */
+body.dark-mode .comparar-box {
+  background-color: #2f2f2f;
+  border: 1px solid #555;
+  padding: 1rem;
+  border-radius: 10px;
+  color: #e0e0e0;
+}
+
+/* ✅ Estilo de los labels de los checkboxes */
+body.dark-mode .comparar-box label {
+  color: #f0f0f0 !important;
+}
+
+/* ✅ Estilo de los checkboxes */
+body.dark-mode .comparar-box input[type="checkbox"] {
+  accent-color: #76baff;
 }
