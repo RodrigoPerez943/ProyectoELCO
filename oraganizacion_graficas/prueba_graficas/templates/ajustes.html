@@ -4,114 +4,117 @@
 {% block header_title %}⚙️ Configuración de Intervalo{% endblock %}
 
 {% block content %}
-  <form action="/ajustes" method="POST">
-    <label for="horas">Horas:</label>
-    <select id="horas" name="horas">
-      {% for h in range(0, 25) %}
-        <option value="{{ h }}" {% if intervalo >= h * 3600 and intervalo < (h+1) * 3600 %} selected {% endif %}>{{ h }}</option>
-      {% endfor %}
-    </select>
+<!-- Intervalo -->
+<form action="/ajustes" method="POST">
+  <label for="horas">Horas:</label>
+  <select id="horas" name="horas">
+    {% for h in range(0, 25) %}
+      <option value="{{ h }}" {% if intervalo >= h * 3600 and intervalo < (h+1) * 3600 %} selected {% endif %}>{{ h }}</option>
+    {% endfor %}
+  </select>
 
-    <label for="minutos">Minutos:</label>
-    <select id="minutos" name="minutos">
-      {% for m in range(0, 60) %}
-        <option value="{{ m }}" {% if intervalo >= m * 60 and intervalo < (m+1) * 60 %} selected {% endif %}>{{ m }}</option>
-      {% endfor %}
-    </select>
+  <label for="minutos">Minutos:</label>
+  <select id="minutos" name="minutos">
+    {% for m in range(0, 60) %}
+      <option value="{{ m }}" {% if intervalo >= m * 60 and intervalo < (m+1) * 60 %} selected {% endif %}>{{ m }}</option>
+    {% endfor %}
+  </select>
 
-    <label for="segundos">Segundos:</label>
-    <select id="segundos" name="segundos">
-      {% for s in range(0, 60) %}
-        <option value="{{ s }}" {% if intervalo == s %} selected {% endif %}>{{ s }}</option>
-      {% endfor %}
-    </select>
+  <label for="segundos">Segundos:</label>
+  <select id="segundos" name="segundos">
+    {% for s in range(0, 60) %}
+      <option value="{{ s }}" {% if intervalo == s %} selected {% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
 
-    <button class="button" type="submit" style="margin-top: 1rem;">💾 Guardar</button>
-  </form>
+  <button class="button" type="submit" style="margin-top: 1rem;">💾 Guardar</button>
+</form>
 
-  <p style="margin-top: 1.5rem;">
-    <b>Intervalo actual:</b>
-    {{ intervalo // 3600 }} h {{ (intervalo % 3600) // 60 }} m {{ intervalo % 60 }} s
-  </p>
+<p style="margin-top: 1.5rem;">
+  <b>Intervalo actual:</b>
+  {{ intervalo // 3600 }} h {{ (intervalo % 3600) // 60 }} m {{ intervalo % 60 }} s
+</p>
 
-  <hr style="margin: 2rem 0;">
+<hr style="margin: 2rem 0;">
 
-  <h2>📬 Envío de resumen por correo</h2>
-  <label>
-    <input type="checkbox" id="resumenCheckbox" {% if email_config.get("resumen_activo") %}checked{% endif %}>
-    Recibir resumen con gráficas medias de todos los sensores
-  </label>
+<h2>📬 Envío de resumen por correo</h2>
+<label>
+  <input type="checkbox" id="resumenCheckbox" {% if email_config.get("resumen_activo") %}checked{% endif %}>
+  Recibir resumen con gráficas medias de todos los sensores
+</label>
 
-  <hr style="margin-top: 2rem;">
+<hr style="margin-top: 2rem;">
 
-  <h2 style="text-align: center;">🧩 Nodos incluidos en el resumen</h2>
-  <form action="/ajustes" method="POST" style="margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center;">
-    <div class="resumen-box" style="
-      max-height: 250px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      padding: 1rem;
-      border-radius: 10px;
-      background: #f8f9fa;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.5rem 1.5rem;
-      width: 420px;
-    ">
-      {% for id, nombre in todos_los_nombres.items() %}
-        <label style="font-weight: 500; display: flex; align-items: center; gap: 6px;">
-          <input type="checkbox" name="nodos_resumen" value="{{ id }}"
-            {% if id in nodos_resumen %}checked{% endif %}
-            style="width: 16px; height: 16px; accent-color: #007bff;">
-          {{ nombre }}
-        </label>
-      {% endfor %}
-    </div>
-  
-    <input type="hidden" name="guardar_nodos_resumen" value="1">
-    <button class="button" style="margin-top: 1rem;">💾 Guardar nodos para resumen</button>
-  </form>
-
-  <hr style="margin-top: 2rem;">
-
-  <div class="btn-cont" style="margin: 2rem auto 0; width: fit-content;">
-    <a href="{{ url_for('nombres_sensores') }}">
-      <button class="button" type="button" title="Editar nombres">📝 Editar nombres de sensores</button>
-    </a>
+<h2 style="text-align: center;">🧩 Nodos incluidos en el resumen</h2>
+<form action="/ajustes" method="POST" style="margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center;">
+  <div class="resumen-box" style="max-height: 250px; overflow-y: auto; border: 1px solid #ccc; padding: 1rem; border-radius: 10px; background: #f8f9fa; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem 1.5rem; width: 420px;">
+    {% for id, nombre in todos_los_nombres.items() %}
+      <label style="font-weight: 500; display: flex; align-items: center; gap: 6px;">
+        <input type="checkbox" name="nodos_resumen" value="{{ id }}"
+          {% if id in nodos_resumen %}checked{% endif %}
+          style="width: 16px; height: 16px; accent-color: #007bff;">
+        {{ nombre }}
+      </label>
+    {% endfor %}
   </div>
+  <input type="hidden" name="guardar_nodos_resumen" value="1">
+  <button class="button" style="margin-top: 1rem;">💾 Guardar nodos para resumen</button>
+</form>
 
-  <hr style="margin-top: 2rem;">
+<hr style="margin-top: 2rem;">
 
-  <div class="btn-cont" style="margin: 2rem auto 0; width: fit-content;">
-    <a href="{{ url_for('alertas_config') }}">
-      <button class="button" type="button" title="Configurar alertas">🚨 Configurar alertas</button>
-    </a>
-  </div>
+<div class="btn-cont" style="margin: 2rem auto 0; width: fit-content;">
+  <a href="{{ url_for('nombres_sensores') }}">
+    <button class="button" type="button" title="Editar nombres">📝 Editar nombres de sensores</button>
+  </a>
+</div>
 
-  <hr style="margin: 2rem 0;">
+<hr style="margin-top: 2rem;">
 
-  <h2>📧 Configuración de correo</h2>
-  <form method="POST">
-    <label>Correo emisor:</label>
-    <input type="email" name="sender" value="{{ email_config.sender or '' }}"><br><br>
+<div class="btn-cont" style="margin: 2rem auto 0; width: fit-content;">
+  <a href="{{ url_for('alertas_config') }}">
+    <button class="button" type="button" title="Configurar alertas">🚨 Configurar alertas</button>
+  </a>
+</div>
 
-    <label>Contraseña:</label>
-    <input type="password" name="password" value="{{ email_config.password or '' }}"><br><br>
+<hr style="margin: 2rem 0;">
 
-    <label>Correo receptor:</label>
-    <input type="email" name="recipient" value="{{ email_config.recipient or '' }}"><br><br>
+<h2>📧 Configuración de correo</h2>
+<form method="POST">
+  <label>Correo emisor:</label>
+  <input type="email" name="sender" value="{{ email_config.sender or '' }}"><br><br>
 
-    <label>Servidor SMTP:</label>
-    <input type="text" name="smtp_server" value="{{ email_config.smtp_server or '' }}"><br><br>
+  <label>Contraseña:</label>
+  <input type="password" name="password" value="{{ email_config.password or '' }}"><br><br>
 
-    <label>Puerto SMTP:</label>
-    <input type="number" name="smtp_port" value="{{ email_config.smtp_port or 587 }}"><br><br>
+  <label>Correo receptor:</label>
+  <input type="email" name="recipient" value="{{ email_config.recipient or '' }}"><br><br>
 
-    <button class="button" type="submit" name="guardar_email" value="1">💾 Guardar configuración de correo</button>
-  </form>
+  <label>Servidor SMTP:</label>
+  <input type="text" name="smtp_server" value="{{ email_config.smtp_server or '' }}"><br><br>
+
+  <label>Puerto SMTP:</label>
+  <input type="number" name="smtp_port" value="{{ email_config.smtp_port or 587 }}"><br><br>
+
+  <button class="button" type="submit" name="guardar_email" value="1">💾 Guardar configuración de correo</button>
+</form>
+
+<hr style="margin: 2rem 0;">
+
+<h2>🌍 Ubicación para datos meteorológicos</h2>
+<p style="font-size: 0.9rem;">Selecciona tu ubicación en el mapa o búscala por nombre.</p>
+
+<form method="POST">
+  <div id="map" style="height: 300px; border-radius: 8px; margin-bottom: 1rem;"></div>
+  <input type="hidden" name="ubicacion_nombre" id="ubicacion_nombre" value="{{ ubicacion_actual.nombre }}">
+  <input type="hidden" name="latitud" id="latitud" value="{{ ubicacion_actual.lat }}">
+  <input type="hidden" name="longitud" id="longitud" value="{{ ubicacion_actual.lon }}">
+  <button class="button" type="submit">💾 Guardar ubicación</button>
+</form>
 {% endblock %}
 
 {% block extra_scripts %}
+<!-- 🌓 Modo oscuro -->
 <script>
   const isDark = localStorage.getItem('dark-mode') === 'true';
   if (isDark) {
@@ -119,14 +122,13 @@
   }
 </script>
 
+<!-- 📬 Resumen por correo -->
 <script>
   const resumenCheckbox = document.getElementById("resumenCheckbox");
   resumenCheckbox?.addEventListener("change", () => {
     fetch("/api/resumen_toggle", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ resumen_activo: resumenCheckbox.checked })
     })
     .then(res => res.json())
@@ -134,6 +136,66 @@
       console.log("✅ Resumen actualizado:", data.resumen_activo);
     })
     .catch(err => console.error("❌ Error actualizando resumen:", err));
+  });
+</script>
+
+<!-- 🗺️ Leaflet y geocoder -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+<script>
+  let marker;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const lat = parseFloat(document.getElementById("latitud").value || "40.4168");
+    const lon = parseFloat(document.getElementById("longitud").value || "-3.7038");
+
+    const map = L.map("map").setView([lat, lon], 10);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+
+    function actualizarInputs(lat, lon, nombre = "") {
+      document.getElementById("latitud").value = lat;
+      document.getElementById("longitud").value = lon;
+      if (nombre) {
+        document.getElementById("ubicacion_nombre").value = nombre;
+      }
+    }
+
+    marker.on("dragend", async () => {
+      const { lat, lng } = marker.getLatLng();
+      map.setView([lat, lng], map.getZoom());
+      actualizarInputs(lat, lng);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const data = await res.json();
+        if (data.display_name) {
+          actualizarInputs(lat, lng, data.display_name);
+        }
+      } catch (e) {
+        console.error("❌ Error obteniendo nombre desde coordenadas:", e);
+      }
+    });
+
+    L.Control.geocoder({
+      defaultMarkGeocode: false,
+      geocoder: L.Control.Geocoder.nominatim()
+    })
+    .on("markgeocode", function(e) {
+      const latlng = e.geocode.center;
+      const nombre = e.geocode.name;
+      marker.setLatLng(latlng);
+      map.setView(latlng, 10);
+      actualizarInputs(latlng.lat, latlng.lng, nombre);
+      console.log("✅ Ubicación seleccionada:", nombre);
+    })
+    .addTo(map);
   });
 </script>
 {% endblock %}

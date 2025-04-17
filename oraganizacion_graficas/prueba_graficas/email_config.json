@@ -4,5 +4,5 @@
     "recipient": "josuebc2003@outlook.com",
     "smtp_server": "smtp.gmail.com",
     "smtp_port": 587,
-    "resumen_activo": true
+    "resumen_activo": false
 }

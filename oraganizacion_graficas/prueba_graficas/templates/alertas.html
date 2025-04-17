@@ -37,12 +37,45 @@
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
+    background-color: white;
+    color: #222;
   }
-  
+
   .form-title {
     text-align: center;
     font-size: 1.2rem;
     margin-bottom: 1rem;
+  }
+
+  /* 🌙 Modo oscuro */
+  body.dark-mode .alerta-wrapper {
+    background-color: #2e3239;
+    color: #e0e0e0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  body.dark-mode table th {
+    background-color: #444;
+    color: #e0e0e0;
+  }
+
+  body.dark-mode table td {
+    border-color: #555;
+    color: #e0e0e0;
+  }
+
+  body.dark-mode td input {
+    background-color: #444;
+    color: #e0e0e0;
+    border-color: #666;
+  }
+
+  body.dark-mode td[colspan] {
+    color: #aaa;
+  }
+
+  body.dark-mode .form-title {
+    color: #fff;
   }
 </style>
 
@@ -65,10 +98,10 @@
         {% for node_id, nombre in nombres.items() %}
         <tr>
           <td><strong>{{ nombre }}</strong></td>
-        
+
           <td><input type="number" name="min_temp_{{ node_id }}" step="0.1" value="{{ alertas[node_id]['min_temp'] if node_id in alertas else '' }}"></td>
           <td><input type="number" name="max_temp_{{ node_id }}" step="0.1" value="{{ alertas[node_id]['max_temp'] if node_id in alertas else '' }}"></td>
-        
+
           {% if not ext[node_id] %}
             <td><input type="number" name="min_hum_{{ node_id }}" step="0.1" value="{{ alertas[node_id]['min_hum'] if node_id in alertas else '' }}"></td>
             <td><input type="number" name="max_hum_{{ node_id }}" step="0.1" value="{{ alertas[node_id]['max_hum'] if node_id in alertas else '' }}"></td>
@@ -78,11 +111,13 @@
             <td colspan="4" style="text-align:center; color:#888;">(Solo aplica temperatura)</td>
           {% endif %}
         </tr>
-        {% endfor %}        
+        {% endfor %}
       </tbody>
     </table>
   </div>
 
-  <button class="button" type="submit">💾 Guardar alertas</button>
+  <div style="text-align: center; margin-top: 1.5rem;">
+    <button class="button" type="submit">💾 Guardar alertas</button>
+  </div>
 </form>
 {% endblock %}

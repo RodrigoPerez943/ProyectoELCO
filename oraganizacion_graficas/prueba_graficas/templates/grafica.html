@@ -14,38 +14,53 @@
   const nodoId = "{{ nodo_id }}";
   const variable = "{{ variable }}";
 
+  // OpenWeather trace precargado desde backend (si existe)
+  const openweatherTrace = {{ openweather_trace | tojson | safe }};
+
   function cargarYActualizarGrafica() {
-    fetch(`/api/datos_grafica/${nodoId}/${variable}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!data.timestamps || data.timestamps.length === 0) {
-          console.warn("⚠️ No hay datos para graficar");
-          return;
-        }
+  fetch(`/api/datos_grafica/${nodoId}/${variable}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.timestamps || data.timestamps.length === 0) {
+        console.warn("⚠️ No hay datos para graficar");
+        return;
+      }
 
-        const trace = {
-          x: data.timestamps,
-          y: data.valores,
-          type: 'scatter',
-          mode: 'lines+markers',
-          name: variable,
-          line: { shape: 'linear' }
-        };
+      const sensorTrace = {
+        x: data.timestamps,
+        y: data.valores,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: variable,
+        line: { shape: 'linear', color: 'blue' }
+      };
 
-        const layout = {
-          title: `${variable.charAt(0).toUpperCase() + variable.slice(1)} - ${nodoId}`,
-          xaxis: { title: 'Hora del día' },
-          yaxis: { title: variable },
-          margin: { l: 50, r: 20, t: 50, b: 50 }
-        };
+      const rangoMin = data.timestamps[0];
+      const rangoMax = data.timestamps[data.timestamps.length - 1];
 
-        Plotly.react('graph', [trace], layout);
-        console.log("✅ Gráfica actualizada dinámicamente");
-      })
-      .catch(err => console.error("❌ Error al actualizar gráfica:", err));
-  }
+      const layout = {
+        title: `${variable.charAt(0).toUpperCase() + variable.slice(1)} - ${nodoId}`,
+        xaxis: {
+          title: 'Hora del día',
+          range: [rangoMin, rangoMax]  // 👈 CENTRA en los datos del sensor
+        },
+        yaxis: { title: variable },
+        margin: { l: 50, r: 20, t: 50, b: 50 },
+        legend: { x: 0.01, y: 0.99, bgcolor: 'rgba(255,255,255,0.8)' }
+      };
 
-  // Cargar al inicio y cada 5 segundos
+      const traces = [sensorTrace];
+      if (openweatherTrace) {
+        traces.push(openweatherTrace);
+      }
+
+      Plotly.react('graph', traces, layout);
+      console.log("✅ Gráfica del sensor actualizada");
+    })
+    .catch(err => console.error("❌ Error al actualizar sensor:", err));
+}
+
+
   cargarYActualizarGrafica();
   setInterval(cargarYActualizarGrafica, 5000);
 </script>

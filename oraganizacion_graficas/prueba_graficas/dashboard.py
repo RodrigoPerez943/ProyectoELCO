@@ -7,8 +7,12 @@ import serial
 from database import obtener_mediciones_por_nodo
 import json
 import threading
-from alertas import ejecutar_resumen_periodico  # asegúrate que esté importado
-
+import plotly.express as px
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+from alertas import ejecutar_resumen_periodico 
+from datetime import datetime, timedelta
+from openweather import obtener_temperaturas_openweather
 
 app = Flask(__name__)
 
@@ -26,23 +30,16 @@ def conectar_db():
 
 @app.route('/')
 def index():
-    """
-    Página principal con lista de nodos disponibles.
-    Se recarga automáticamente cada 5 segundos (vía JavaScript en `index.html`).
-    """
-    nodos = set()
     conn = conectar_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT node_id, ext FROM mediciones")
-    for row in cursor.fetchall():
-        #nodos.add(f"nodo_{row[0]}")
-        if (row[1] == 1):
-            nodos.add(f"sensor_exterior_{row[0]}")
-        else:
-            nodos.add(f"sensor_{row[0]}")    
-    conn.close()
+    cursor.execute('''
+        SELECT node_id, temperature, humidity, pressure, ext, MAX(timestamp)
+        FROM mediciones
+        GROUP BY node_id
+    ''')
+    rows = cursor.fetchall()
 
-        # Cargar nombres de sensores
+    # Cargar nombres personalizados
     nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
     if os.path.exists(nombres_file):
         with open(nombres_file, "r") as f:
@@ -50,18 +47,69 @@ def index():
     else:
         nombres = {}
 
-    ids = set()
-    
-    # Crear nombre por defecto si falta
+    ids = {str(row[0]) for row in rows}
     for node_id in ids:
         if node_id not in nombres:
             nombres[node_id] = f"Sensor {node_id}"
 
-    # Guardar actualizados
     with open(nombres_file, "w") as f:
         json.dump(nombres, f, indent=4)
 
-    return render_template("index.html", nodos=sorted(nodos), nombres=nombres)
+    tarjetas = []
+    ahora = datetime.now()
+    ultima_medicion = {}
+
+    for row in rows:
+        node_id = str(row[0])
+        temperatura = row[1]
+        humedad = row[2]
+        presion = row[3]
+        ext = row[4]
+        timestamp = pd.to_datetime(row[5])
+        tipo = "exterior" if ext == 1 else "interior"
+
+        tarjetas.append({
+            "id": node_id,
+            "nombre": nombres.get(node_id, f"Sensor {node_id}"),
+            "temperature": round(temperatura, 1) if temperatura is not None else "N/A",
+            "humidity": round(humedad, 1) if humedad is not None else "N/A",
+            "pressure": round(presion, 1) if presion is not None else "N/A",
+            "tipo": tipo
+        })
+
+        ultima_medicion[node_id] = (ahora - timestamp).total_seconds()
+
+    # Calcular estadísticas
+    exteriores = [x for x in tarjetas if x["tipo"] == "exterior"]
+    interiores = [x for x in tarjetas if x["tipo"] == "interior"]
+    sensor_mas_caliente = max(tarjetas, key=lambda x: x["temperature"] if isinstance(x["temperature"], float) else -999)
+    sensor_mas_humedo = max(interiores, key=lambda x: x["humidity"] if isinstance(x["humidity"], float) else -999)
+    presiones = [x["pressure"] for x in interiores if isinstance(x["pressure"], float)]
+    media_presion = round(sum(presiones) / len(presiones), 1) if presiones else "N/A"
+
+    # Cargar alertas y contar las recientes
+    alertas_file = os.path.join(BASE_DIR, "alertas_config.json")
+    alertas_recientes = 0
+    if os.path.exists(alertas_file):
+        with open(alertas_file, "r") as f:
+            alertas_data = json.load(f)
+        hace_una_semana = ahora - timedelta(days=7)
+        for config in alertas_data.values():
+            estado = config.get("estado", {})
+            for tipo, valor in estado.items():
+                if valor == "alerta":
+                    alertas_recientes += 1
+
+    return render_template("index.html",
+                           tarjetas=tarjetas,
+                           nombres=nombres,
+                           sensor_mas_caliente=sensor_mas_caliente,
+                           sensor_mas_humedo=sensor_mas_humedo,
+                           media_presion=media_presion,
+                           alertas_semana=alertas_recientes,
+                           ultima_medicion=ultima_medicion)
+
+
 
 @app.route('/seleccionar_grafica/<nodo_id>')
 def seleccionar_grafica(nodo_id):
@@ -86,6 +134,7 @@ def seleccionar_grafica(nodo_id):
     nombre_sensor = nombres.get(str(node_id_int), f"Sensor {node_id_int}")
     return render_template("seleccionar_grafica.html", nodo_id=nodo_id, es_exterior=es_exterior,nombre=nombre_sensor)
 
+
 @app.route('/graficas/<nodo_id>/temperature')
 def ver_grafica_temperature(nodo_id):
     try:
@@ -94,50 +143,61 @@ def ver_grafica_temperature(nodo_id):
         if not datos:
             return jsonify({"error": f"No hay datos disponibles para el nodo {nodo_id}"})
 
+        # Construir DataFrame de sensor
         df = pd.DataFrame(datos, columns=["timestamp", "temperature", "humidity", "pressure", "ext"])
         df["timestamp"] = pd.to_datetime(df["timestamp"])
+        is_exterior = int(df["ext"].mode()[0]) == 1
 
-        # Cargar nombre personalizado
+        # Cargar nombre del sensor
         nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
         if os.path.exists(nombres_file):
             with open(nombres_file, "r") as f:
                 nombres = json.load(f)
         else:
             nombres = {}
-
         nombre = nombres.get(str(node_id_int), f"Sensor {node_id_int}")
 
-        # Crear gráfica
-        fig = px.line(
-            df,
-            x="timestamp",
-            y="temperature",
-            title=f"Temperatura de {nombre}",
-            labels={"timestamp": "Hora del día", "temperature": "Temperatura (°C)"},
-            markers=True
-        )
-        
-        fig.update_layout(
-            autosize=True,
-            margin=dict(l=20, r=20, t=40, b=20)
-        )
+        # Si es exterior, preparar datos de OpenWeather para enviarlos como trace estático al frontend
+        openweather_trace = None
+        if is_exterior:
+            from openweather import obtener_temperaturas_openweather
+            datos_open = obtener_temperaturas_openweather()
+            print("✅ OpenWeatherMap cargado:")
+            for t, temp in datos_open[:5]:
+                print(f"{t} → {temp}")
 
-        fig.update_traces(name=f"Temperatura - {nombre}")
+            if datos_open:
+                df_open = pd.DataFrame(datos_open, columns=["timestamp", "temperature"])
+                df_open["timestamp"] = pd.to_datetime(df_open["timestamp"])
 
-        # Exportar a HTML parcial con responsive=True
-        html_grafica = fig.to_html(full_html=False, include_plotlyjs="cdn", config={"responsive": True})
+                openweather_trace = {
+                    "x": df_open["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S").tolist(),
+                    "y": df_open["temperature"].tolist(),
+                    "mode": "lines+markers",
+                    "name": "OpenWeatherMap",
+                    "line": {"dash": "dot", "color": "orange"},
+                    "marker": {"size": 9, "symbol": "circle"}
+                }
+            else:
+                print("⚠️ No se encontraron datos de OpenWeatherMap")
 
-        # Usar plantilla con estilo unificado
+        # Generar HTML base del gráfico con Plotly
+        html_grafica = """
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <div id="graph"></div>
+        """  # Solo dejamos el contenedor, el gráfico se construye por JS
+
         return render_template(
             "grafica.html",
             grafica=html_grafica,
             titulo=f"Temperatura de {nombre}",
             nodo_id=nodo_id,
-            variable="temperature"
+            variable="temperature",
+            openweather_trace=openweather_trace
         )
 
-
     except Exception as e:
+        print("❌ Error en ver_grafica_temperature:", e)
         return jsonify({"error": f"Error generando gráfica: {e}"})
 
 
@@ -184,8 +244,10 @@ def ver_grafica_pressure(nodo_id):
             grafica=html_grafica,
             titulo=f"Presión medida por {nombre}",
             nodo_id=nodo_id,
-            variable="pressure"
+            variable="pressure",
+            openweather_trace=None  # 👈 ¡esto es clave!
         )
+
 
     except Exception as e:
         return jsonify({"error": f"Error generando gráfica: {e}"})
@@ -233,9 +295,10 @@ def ver_grafica_humidity(nodo_id):
         return render_template(
             "grafica.html",
             grafica=html_grafica,
-            titulo=f"Temperatura de {nombre}",
+            titulo=f"Humedad medida por {nombre}",
             nodo_id=nodo_id,
-            variable="humidity"
+            variable="humidity",
+            openweather_trace=None
         )
 
 
@@ -292,21 +355,21 @@ EMAIL_CONFIG_FILE = os.path.join(BASE_DIR, "email_config.json")
 def ajustes():
     intervalo_actual = obtener_intervalo()
 
-    # Leer email_config
+    # Leer configuración de correo
     if os.path.exists(EMAIL_CONFIG_FILE):
         with open(EMAIL_CONFIG_FILE, "r") as f:
             email_config = json.load(f)
     else:
         email_config = {}
 
-    # Leer nodos de la BD
+    # Leer nodos
     conn = conectar_db()
     cursor = conn.cursor()
     cursor.execute("SELECT DISTINCT node_id FROM mediciones")
     nodos = sorted(set(str(row[0]) for row in cursor.fetchall()))
     conn.close()
 
-    # Leer nombres personalizados
+    # Leer nombres
     nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
     if os.path.exists(nombres_file):
         with open(nombres_file, "r") as f:
@@ -314,12 +377,11 @@ def ajustes():
     else:
         todos_los_nombres = {}
 
-    # Completar nombres si faltan
     for node_id in nodos:
         if node_id not in todos_los_nombres:
             todos_los_nombres[node_id] = f"Sensor {node_id}"
 
-    # Leer selección actual
+    # Leer nodos incluidos en resumen
     nodos_resumen_file = os.path.join(BASE_DIR, "nodos_resumen.json")
     if os.path.exists(nodos_resumen_file):
         with open(nodos_resumen_file, "r") as f:
@@ -327,8 +389,23 @@ def ajustes():
     else:
         nodos_resumen = []
 
-    # Manejar POST
+    # Leer configuración de ubicación
+    ubicacion_config_file = os.path.join(BASE_DIR, "ubicacion_config.json")
+    if os.path.exists(ubicacion_config_file):
+        with open(ubicacion_config_file, "r") as f:
+            ubicacion_config = json.load(f)
+    else:
+        ubicacion_config = {
+            "nombre": "Madrid, España",
+            "lat": "40.4168",
+            "lon": "-3.7038"
+        }
+        with open(ubicacion_config_file, "w") as f:
+            json.dump(ubicacion_config, f, indent=4)
+
+    # Procesar POST
     if request.method == "POST":
+        # Guardar intervalo
         if "guardar_email" not in request.form:
             horas = int(request.form.get("horas", 0))
             minutos = int(request.form.get("minutos", 0))
@@ -338,6 +415,7 @@ def ajustes():
                 guardar_intervalo(nuevo_intervalo)
                 enviar_intervalo_uart(nuevo_intervalo)
 
+        # Guardar configuración de correo
         if "guardar_email" in request.form:
             nueva_config = {
                 "sender": request.form.get("sender", ""),
@@ -349,21 +427,31 @@ def ajustes():
             with open(EMAIL_CONFIG_FILE, "w") as f:
                 json.dump(nueva_config, f, indent=4)
 
+        # Guardar selección de nodos para resumen
         if "guardar_nodos_resumen" in request.form:
             seleccionados = request.form.getlist("nodos_resumen")
             seleccionados_int = [int(s) for s in seleccionados]
             with open(nodos_resumen_file, "w") as f:
                 json.dump({"nodos": seleccionados_int}, f, indent=4)
 
+        # Guardar ubicación si se ha enviado
+        if request.form.get("latitud") and request.form.get("longitud"):
+            ubicacion_config = {
+                "nombre": request.form.get("ubicacion_nombre", "Ciudad personalizada"),
+                "lat": request.form.get("latitud"),
+                "lon": request.form.get("longitud")
+            }
+            with open(ubicacion_config_file, "w") as f:
+                json.dump(ubicacion_config, f, indent=4)
+
         return redirect(url_for("ajustes"))
 
     return render_template("ajustes.html",
-                           intervalo=intervalo_actual,
-                           email_config=email_config,
-                           todos_los_nombres=todos_los_nombres,
-                           nodos_resumen=[str(n) for n in nodos_resumen])
-
-
+                            intervalo=intervalo_actual,
+                            email_config=email_config,
+                            todos_los_nombres=todos_los_nombres,
+                            nodos_resumen=[str(n) for n in nodos_resumen],
+                            ubicacion_actual=ubicacion_config)  # 🔁 Pasamos todo
 
 @app.route("/api/resumen_toggle", methods=["POST"])
 def resumen_toggle():

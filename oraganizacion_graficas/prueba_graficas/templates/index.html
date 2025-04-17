@@ -1,26 +1,183 @@
 {% extends "base.html" %}
 
-{% block title %}Lista de Nodos{% endblock %}
-{% block header_title %}Lista de Nodos{% endblock %}
+{% block title %}Sensores Activos{% endblock %}
+{% block header_title %}🌐 Vista de Sensores{% endblock %}
 
 {% block content %}
-<ul>
-  {% for nodo in nodos %}
-    {% set node_id = nodo.split('_')[-1] %}
-    <li>
-      <a href="{{ url_for('seleccionar_grafica', nodo_id=nodo) }}">
-        {{ nombres.get(node_id, nodo) }}
-      </a>
-    </li>
-  {% endfor %}
-</ul>
+<style>
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
 
+  .dashboard-box {
+    background: #f1f1f1;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+
+  .tabla-tiempo-container {
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    background: #fff;
+  }
+
+  .tabla-tiempo {
+    width: 100%;
+    font-size: 0.9rem;
+    border-collapse: collapse;
+  }
+
+  .tabla-tiempo th, .tabla-tiempo td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #ccc;
+    text-align: left;
+  }
+
+  .tabla-tiempo th {
+    background-color: #f0f0f0;
+    font-weight: 600;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .sensor-card {
+    background: #f8f9fa;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    transition: transform 0.2s ease;
+  }
+
+  .sensor-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .sensor-type {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #555;
+  }
+
+  .sensor-values {
+    font-size: 1rem;
+    margin: 0.25rem 0;
+  }
+
+  .sensor-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .card-button {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 6px 12px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+
+  /* 🌙 Modo oscuro */
+  body.dark-mode .dashboard-box,
+  body.dark-mode .sensor-card,
+  body.dark-mode .tabla-tiempo-container {
+    background-color: #2e3239;
+    color: #e0e0e0;
+    border-color: #555;
+  }
+
+  body.dark-mode .sensor-type,
+  body.dark-mode .sensor-values,
+  body.dark-mode .sensor-name {
+    color: #e0e0e0;
+  }
+
+  body.dark-mode .tabla-tiempo th {
+    background-color: #444;
+  }
+
+  body.dark-mode .tabla-tiempo td,
+  body.dark-mode .tabla-tiempo th {
+    color: #e0e0e0;
+    border-color: #555;
+  }
+
+  body.dark-mode tr[style*="background-color: #ffe6e6;"] {
+    background-color: #552222 !important;
+  }
+</style>
+
+<!-- 📊 DASHBOARD RÁPIDO -->
+<h2>📊 Estadísticas rápidas</h2>
+<div class="dashboard-grid">
+  <div class="dashboard-box">🌡️ <b>Más caliente:</b><br> {{ sensor_mas_caliente.nombre }} ({{ sensor_mas_caliente.temperature }}°C)</div>
+  <div class="dashboard-box">💧 <b>Más húmedo:</b><br> {{ sensor_mas_humedo.nombre }} ({{ sensor_mas_humedo.humidity }}%)</div>
+  <div class="dashboard-box">📈 <b>Presión media:</b><br> {{ media_presion }} hPa</div>
+  <div class="dashboard-box">🚨 <b>Alertas (7 días):</b><br> {{ alertas_semana }}</div>
+</div>
+
+<!-- ⏱️ ÚLTIMA MEDICIÓN -->
+<h3>⏱️ Última medición por sensor</h3>
+<div class="tabla-tiempo-container">
+  <table class="tabla-tiempo">
+    <thead>
+      <tr>
+        <th>Sensor</th>
+        <th>Minutos</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for node_id, segundos in ultima_medicion.items() %}
+        {% set minutos = (segundos // 60)|int %}
+        <tr {% if minutos > 30 %}style="background-color: #ffe6e6;"{% endif %}>
+          <td>{{ nombres.get(node_id, "Sensor " ~ node_id) }}</td>
+          <td>{{ minutos }} min</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- 🧩 TARJETAS DE SENSORES -->
+<div class="card-grid">
+  {% for t in tarjetas %}
+    <div class="sensor-card">
+      <div class="sensor-name">{{ t.nombre }}</div>
+      <div class="sensor-type">{{ "🌤️ Exterior" if t.tipo == "exterior" else "🏠 Interior" }}</div>
+      <div class="sensor-values">🌡️ {{ t.temperature }} °C</div>
+      <div class="sensor-values">💧 {{ t.humidity }} %</div>
+      <div class="sensor-values">📈 {{ t.pressure }} hPa</div>
+      <a href="{{ url_for('seleccionar_grafica', nodo_id='sensor_' + t.id if t.tipo == 'interior' else 'sensor_exterior_' + t.id) }}"
+         class="card-button">📈 Ver Gráficas</a>
+    </div>
+  {% endfor %}
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-  setInterval(() => {
-    window.location.reload();
-  }, 5000);
+  setInterval(() => window.location.reload(), 5000);
 </script>
 {% endblock %}
