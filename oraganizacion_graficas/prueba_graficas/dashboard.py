@@ -13,6 +13,7 @@ import plotly.graph_objects as go
 from alertas import ejecutar_resumen_periodico 
 from datetime import datetime, timedelta
 from openweather import obtener_temperaturas_openweather
+import numpy as np
 
 app = Flask(__name__)
 
@@ -27,6 +28,30 @@ def conectar_db():
     """Conectar a la base de datos y devolver la conexión."""
     conn = sqlite3.connect(DB_PATH)
     return conn
+
+def generar_reloj_solar(df, variable):
+    df_today = df[df["timestamp"].dt.date == datetime.now().date()].copy()
+
+    if len(df_today) < 10:
+        return None  # No es suficiente para graficar
+
+    df_today["hora_decimal"] = df_today["timestamp"].dt.hour + df_today["timestamp"].dt.minute / 60
+    df_today["angulo"] = df_today["hora_decimal"] * 15  # Escala a 0–360 grados
+    df_today.sort_values("hora_decimal", inplace=True)
+
+    # Añadir primer punto al final para cerrar el círculo
+    if abs(df_today["hora_decimal"].iloc[-1] - df_today["hora_decimal"].iloc[0]) > 1:
+        df_today = pd.concat([df_today, df_today.iloc[[0]]])
+
+    return {
+        "type": "scatterpolar",
+        "r": df_today[variable].tolist(),
+        "theta": df_today["angulo"].tolist(),  # ⬅️ aquí va la columna escalada
+        "mode": "lines+markers",
+        "name": "Reloj Solar",
+        "line": {"color": "#FF5733", "shape": "spline"},
+        "marker": {"size": 5}
+    }
 
 @app.route('/')
 def index():
@@ -68,13 +93,27 @@ def index():
         timestamp = pd.to_datetime(row[5])
         tipo = "exterior" if ext == 1 else "interior"
 
+        # Obtener últimos 10 valores para sparkline
+        cursor.execute("""
+            SELECT timestamp, temperature FROM mediciones
+            WHERE node_id = ? ORDER BY timestamp DESC LIMIT 10
+        """, (int(node_id),))
+        historico = cursor.fetchall()
+        historico.reverse()  # más antiguo primero
+
+        temp_spark = {
+            "x": [x[0] for x in historico],
+            "y": [x[1] for x in historico]
+        } if historico else {"x": [], "y": []}
+
         tarjetas.append({
             "id": node_id,
             "nombre": nombres.get(node_id, f"Sensor {node_id}"),
             "temperature": round(temperatura, 1) if temperatura is not None else "N/A",
             "humidity": round(humedad, 1) if humedad is not None else "N/A",
             "pressure": round(presion, 1) if presion is not None else "N/A",
-            "tipo": tipo
+            "tipo": tipo,
+            "temp_spark": temp_spark
         })
 
         ultima_medicion[node_id] = (ahora - timestamp).total_seconds()
@@ -134,7 +173,6 @@ def seleccionar_grafica(nodo_id):
     nombre_sensor = nombres.get(str(node_id_int), f"Sensor {node_id_int}")
     return render_template("seleccionar_grafica.html", nodo_id=nodo_id, es_exterior=es_exterior,nombre=nombre_sensor)
 
-
 @app.route('/graficas/<nodo_id>/temperature')
 def ver_grafica_temperature(nodo_id):
     try:
@@ -157,7 +195,7 @@ def ver_grafica_temperature(nodo_id):
             nombres = {}
         nombre = nombres.get(str(node_id_int), f"Sensor {node_id_int}")
 
-        # Si es exterior, preparar datos de OpenWeather para enviarlos como trace estático al frontend
+        # Si es exterior, preparar datos de OpenWeather
         openweather_trace = None
         if is_exterior:
             from openweather import obtener_temperaturas_openweather
@@ -181,24 +219,64 @@ def ver_grafica_temperature(nodo_id):
             else:
                 print("⚠️ No se encontraron datos de OpenWeatherMap")
 
-        # Generar HTML base del gráfico con Plotly
+        # Gráfico: solo el div, se pinta por JS
         html_grafica = """
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
         <div id="graph"></div>
-        """  # Solo dejamos el contenedor, el gráfico se construye por JS
+        """
 
+        # Calcular estadísticas
+        valores = df["temperature"].dropna()
+        resumen_estadistico = {
+            "min": round(valores.min(), 2),
+            "max": round(valores.max(), 2),
+            "mean": round(valores.mean(), 2),
+            "std": round(valores.std(), 2),
+            "ultima": df["timestamp"].max().strftime("%Y-%m-%d %H:%M"),
+            "total": len(valores)
+        }
+
+        # Si el sensor es interior, calcular coeficiente de aislamiento
+        if not is_exterior:
+            conn = conectar_db()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT temperature FROM mediciones
+                WHERE ext = 1 AND timestamp > datetime('now', '-2 hour')
+            """)
+            exterior_temps = [row[0] for row in cursor.fetchall() if row[0] is not None]
+            conn.close()
+
+            if exterior_temps:
+                media_ext = sum(exterior_temps) / len(exterior_temps)
+                media_int = resumen_estadistico["mean"]
+                std_int = resumen_estadistico["std"]
+
+                diferencia = abs(media_int - media_ext)
+                if diferencia > 0:
+                    coef = 1 - (std_int / diferencia)
+                    resumen_estadistico["aislamiento"] = round(max(0, min(coef, 1)), 3)
+
+
+        reloj_solar_trace = generar_reloj_solar(df, "temperature")  
+
+        # Render
         return render_template(
             "grafica.html",
             grafica=html_grafica,
             titulo=f"Temperatura de {nombre}",
             nodo_id=nodo_id,
             variable="temperature",
-            openweather_trace=openweather_trace
+            openweather_trace=openweather_trace,
+            resumen=resumen_estadistico,
+            reloj_solar_trace=reloj_solar_trace
+
         )
 
     except Exception as e:
         print("❌ Error en ver_grafica_temperature:", e)
         return jsonify({"error": f"Error generando gráfica: {e}"})
+
 
 
 @app.route('/graficas/<nodo_id>/pressure')
@@ -239,13 +317,27 @@ def ver_grafica_pressure(nodo_id):
 
         html_grafica = fig.to_html(full_html=False, include_plotlyjs="cdn", config={"responsive": True})
 
+        valores = df["temperature"].dropna()
+        resumen_estadistico = {
+            "min": round(valores.min(), 2),
+            "max": round(valores.max(), 2),
+            "mean": round(valores.mean(), 2),
+            "std": round(valores.std(), 2),
+            "ultima": df["timestamp"].max().strftime("%Y-%m-%d %H:%M")
+        }
+
+        reloj_solar_trace = generar_reloj_solar(df, "pressure")  
+
+
         return render_template(
             "grafica.html",
             grafica=html_grafica,
             titulo=f"Presión medida por {nombre}",
             nodo_id=nodo_id,
             variable="pressure",
-            openweather_trace=None  # 👈 ¡esto es clave!
+            openweather_trace=None, 
+            resumen=resumen_estadistico,
+            reloj_solar_trace=reloj_solar_trace
         )
 
 
@@ -292,13 +384,27 @@ def ver_grafica_humidity(nodo_id):
 
         html_grafica = fig.to_html(full_html=False, include_plotlyjs="cdn", config={"responsive": True})
 
+        valores = df["temperature"].dropna()
+        resumen_estadistico = {
+            "min": round(valores.min(), 2),
+            "max": round(valores.max(), 2),
+            "mean": round(valores.mean(), 2),
+            "std": round(valores.std(), 2),
+            "ultima": df["timestamp"].max().strftime("%Y-%m-%d %H:%M")
+        }
+
+        reloj_solar_trace = generar_reloj_solar(df, "humidity")  
+
+
         return render_template(
             "grafica.html",
             grafica=html_grafica,
             titulo=f"Humedad medida por {nombre}",
             nodo_id=nodo_id,
             variable="humidity",
-            openweather_trace=None
+            openweather_trace=None,
+            resumen=resumen_estadistico,
+            reloj_solar_trace=reloj_solar_trace
         )
 
 
@@ -368,6 +474,34 @@ def ajustes():
     cursor.execute("SELECT DISTINCT node_id FROM mediciones")
     nodos = sorted(set(str(row[0]) for row in cursor.fetchall()))
     conn.close()
+
+        # Obtener IDs reales desde la base de datos
+    conn = conectar_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT node_id FROM mediciones")
+    ids_db = sorted(set(str(row[0]) for row in cursor.fetchall()))
+    conn.close()
+
+    # Cargar archivo de nombres
+    nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
+    if os.path.exists(nombres_file):
+        with open(nombres_file, "r") as f:
+            nombres = json.load(f)
+    else:
+        nombres = {}
+
+    # Eliminar nombres de sensores que ya no existen
+    nombres_actualizados = {k: v for k, v in nombres.items() if k in ids_db}
+
+    # Añadir nombres faltantes
+    for node_id in ids_db:
+        if node_id not in nombres_actualizados:
+            nombres_actualizados[node_id] = f"Sensor {node_id}"
+
+    # Guardar de nuevo
+    with open(nombres_file, "w") as f:
+        json.dump(nombres_actualizados, f, indent=4)
+
 
     # Leer nombres
     nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")

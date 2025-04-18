@@ -99,6 +99,15 @@
     font-size: 0.9rem;
   }
 
+  .sparkline {
+    height: 60px;
+    margin: 0.5rem 0 0.25rem;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+  }
+
   /* 🌙 Modo oscuro */
   body.dark-mode .dashboard-box,
   body.dark-mode .sensor-card,
@@ -127,9 +136,13 @@
   body.dark-mode tr[style*="background-color: #ffe6e6;"] {
     background-color: #552222 !important;
   }
+
+  body.dark-mode .sparkline {
+    background-color: #3a3f47;
+    border-color: #666;
+  }
 </style>
 
-<!-- 📊 DASHBOARD RÁPIDO -->
 <h2>📊 Estadísticas rápidas</h2>
 <div class="dashboard-grid">
   <div class="dashboard-box">🌡️ <b>Más caliente:</b><br> {{ sensor_mas_caliente.nombre }} ({{ sensor_mas_caliente.temperature }}°C)</div>
@@ -138,7 +151,6 @@
   <div class="dashboard-box">🚨 <b>Alertas (7 días):</b><br> {{ alertas_semana }}</div>
 </div>
 
-<!-- ⏱️ ÚLTIMA MEDICIÓN -->
 <h3>⏱️ Última medición por sensor</h3>
 <div class="tabla-tiempo-container">
   <table class="tabla-tiempo">
@@ -160,15 +172,17 @@
   </table>
 </div>
 
-<!-- 🧩 TARJETAS DE SENSORES -->
 <div class="card-grid">
   {% for t in tarjetas %}
     <div class="sensor-card">
       <div class="sensor-name">{{ t.nombre }}</div>
       <div class="sensor-type">{{ "🌤️ Exterior" if t.tipo == "exterior" else "🏠 Interior" }}</div>
+      <div class="sparkline" id="sparkline-{{ t.id }}"></div>
       <div class="sensor-values">🌡️ {{ t.temperature }} °C</div>
-      <div class="sensor-values">💧 {{ t.humidity }} %</div>
-      <div class="sensor-values">📈 {{ t.pressure }} hPa</div>
+      {% if t.tipo == "interior" %}
+        <div class="sensor-values">💧 {{ t.humidity }} %</div>
+        <div class="sensor-values">📈 {{ t.pressure }} hPa</div>
+      {% endif %}
       <a href="{{ url_for('seleccionar_grafica', nodo_id='sensor_' + t.id if t.tipo == 'interior' else 'sensor_exterior_' + t.id) }}"
          class="card-button">📈 Ver Gráficas</a>
     </div>
@@ -177,7 +191,26 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
   setInterval(() => window.location.reload(), 5000);
+
+  {% for t in tarjetas %}
+    Plotly.newPlot("sparkline-{{ t.id }}", [{
+      x: {{ t.temp_spark.x | tojson }},
+      y: {{ t.temp_spark.y | tojson }},
+      mode: "lines",
+      line: {
+        color: "{{ 'orange' if t.tipo == 'exterior' else '#007bff' }}",
+        width: 2
+      },
+      hoverinfo: "skip"
+    }], {
+      margin: { l: 0, r: 0, t: 0, b: 0 },
+      xaxis: { visible: false },
+      yaxis: { visible: false },
+      height: 60
+    }, { displayModeBar: false });
+  {% endfor %}
 </script>
 {% endblock %}
