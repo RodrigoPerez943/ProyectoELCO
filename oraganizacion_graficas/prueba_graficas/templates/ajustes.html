@@ -77,6 +77,21 @@
   </a>
 </div>
 
+
+<hr style="margin: 2rem 0;">
+
+<h2>📡 Configuración del broker MQTT</h2>
+<form method="POST">
+  <label>IP del broker:</label>
+  <input type="text" name="mqtt_ip" value="{{ mqtt_config.ip or '' }}"><br><br>
+
+  <label>Puerto del broker:</label>
+  <input type="number" name="mqtt_port" value="{{ mqtt_config.port or 1883 }}"><br><br>
+
+  <button class="button" type="submit" name="guardar_mqtt" value="1">💾 Guardar configuración MQTT</button>
+</form>
+
+
 <hr style="margin: 2rem 0;">
 
 <h2>📧 Configuración de correo</h2>

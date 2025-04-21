@@ -110,9 +110,15 @@
 {% endif %}
 
 <script>
+  let openweatherTrace = null;
+  {% if openweather_trace %}
+    openweatherTrace = {{ openweather_trace | tojson | safe }};
+  {% endif %}
+
+  console.log("🌤️ OpenWeatherTrace:", openweatherTrace);
+
   const nodoId = "{{ nodo_id }}";
   const variable = "{{ variable }}";
-  const openweatherTrace = {{ openweather_trace | tojson | safe }};
 
   function cargarYActualizarGrafica() {
     fetch(`/api/datos_grafica/${nodoId}/${variable}`)
@@ -132,18 +138,30 @@
           line: { shape: 'linear', color: 'blue' }
         };
 
+        const traces = [sensorTrace];
+
+        // ⚠️ Añadir OpenWeather si está disponible y válido
+        if (openweatherTrace && openweatherTrace.x && openweatherTrace.x.length > 0) {
+          traces.push(openweatherTrace);
+        }
+
+        const sensorStart = data.timestamps[0];
+        const sensorEnd = data.timestamps[data.timestamps.length - 1];
+
         const layout = {
           title: "{{ titulo }}",
-          xaxis: { title: 'Hora del día', range: [data.timestamps[0], data.timestamps[data.timestamps.length - 1]] },
-          yaxis: { title: variable },
+          
+          xaxis: {
+            title: 'Hora del día',
+            range: [sensorStart, sensorEnd],
+            tickformat: "%H:%M\n%b %d"
+          },
+          yaxis: {
+            title: variable
+          },
           margin: { l: 50, r: 20, t: 50, b: 50 },
           legend: { x: 0.01, y: 0.99, bgcolor: 'rgba(255,255,255,0.8)' }
         };
-
-        const traces = [sensorTrace];
-        if (openweatherTrace) {
-          traces.push(openweatherTrace);
-        }
 
         Plotly.react('graph', traces, layout);
         console.log("✅ Gráfica del sensor actualizada");
@@ -151,7 +169,9 @@
       .catch(err => console.error("❌ Error al actualizar sensor:", err));
   }
 
+  // ⏱ Actualiza cada 5 segundos
   cargarYActualizarGrafica();
   setInterval(cargarYActualizarGrafica, 5000);
 </script>
+
 {% endblock %}

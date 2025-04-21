@@ -213,9 +213,10 @@ def ver_grafica_temperature(nodo_id):
                     "y": df_open["temperature"].tolist(),
                     "mode": "lines+markers",
                     "name": "OpenWeatherMap",
-                    "line": {"dash": "dot", "color": "orange"},
-                    "marker": {"size": 9, "symbol": "circle"}
+                    "line": {"dash": "dot", "color": "orange", "width": 3},
+                    "marker": {"size": 6, "symbol": "circle"}
                 }
+
             else:
                 print("⚠️ No se encontraron datos de OpenWeatherMap")
 
@@ -468,6 +469,16 @@ def ajustes():
     else:
         email_config = {}
 
+    MQTT_CONFIG_FILE = os.path.join(BASE_DIR, "mqtt_config.json")
+    if os.path.exists(MQTT_CONFIG_FILE):
+        with open(MQTT_CONFIG_FILE, "r") as f:
+            mqtt_config = json.load(f)
+    else:
+        mqtt_config = {
+            "ip": "192.168.1.130",
+            "port": 1883
+        }
+
     # Leer nodos
     conn = conectar_db()
     cursor = conn.cursor()
@@ -549,6 +560,21 @@ def ajustes():
                 guardar_intervalo(nuevo_intervalo)
                 enviar_intervalo_uart(nuevo_intervalo)
 
+        # Guardar configuración MQTT
+        if request.form.get("mqtt_ip") and request.form.get("mqtt_port"):
+            mqtt_config = {
+                "ip": request.form.get("mqtt_ip"),
+                "port": int(request.form.get("mqtt_port"))
+            }
+            with open(MQTT_CONFIG_FILE, "w") as f:
+                json.dump(mqtt_config, f, indent=4)
+
+            # 💥 Borrar mqtt_discovery_flags para forzar redetección con nuevo broker o nombres
+            mqtt_flags_file = os.path.join(BASE_DIR, "mqtt_discovery_flags.json")
+            if os.path.exists(mqtt_flags_file):
+                os.remove(mqtt_flags_file)
+                print("🔄 mqtt_discovery_flags.json eliminado. Se forzará redetección.")
+
         # Guardar configuración de correo
         if "guardar_email" in request.form:
             nueva_config = {
@@ -581,11 +607,13 @@ def ajustes():
         return redirect(url_for("ajustes"))
 
     return render_template("ajustes.html",
-                            intervalo=intervalo_actual,
-                            email_config=email_config,
-                            todos_los_nombres=todos_los_nombres,
-                            nodos_resumen=[str(n) for n in nodos_resumen],
-                            ubicacion_actual=ubicacion_config)  # 🔁 Pasamos todo
+                        intervalo=intervalo_actual,
+                        email_config=email_config,
+                        todos_los_nombres=todos_los_nombres,
+                        nodos_resumen=[str(n) for n in nodos_resumen],
+                        ubicacion_actual=ubicacion_config,
+                        mqtt_config=mqtt_config)
+
 
 @app.route("/api/resumen_toggle", methods=["POST"])
 def resumen_toggle():
@@ -723,6 +751,7 @@ def api_temperaturas():
 @app.route('/nombres_sensores', methods=["GET", "POST"])
 def nombres_sensores():
     nombres_file = os.path.join(BASE_DIR, "sensor_nombres.json")
+    discovery_flag_file = os.path.join(BASE_DIR, "mqtt_discovery_flags.json")
 
     # 🔹 Cargar nombres existentes
     if os.path.exists(nombres_file):
@@ -747,15 +776,36 @@ def nombres_sensores():
             "ext": bool(ext)
         }
 
-    # 🔹 Si se ha enviado el formulario, actualizar nombres
+    # 🔹 Si se ha enviado el formulario, actualizar nombres y resetear discovery
     if request.method == "POST":
         nuevos_nombres = request.form.to_dict()
         solo_nombres = {k: v for k, v in nuevos_nombres.items()}
+
+        # Cargar flags actuales
+        if os.path.exists(discovery_flag_file):
+            with open(discovery_flag_file, "r") as f:
+                discovery_flags = json.load(f)
+        else:
+            discovery_flags = {}
+
+        # Eliminar de los flags los nodos que han cambiado
+        for node_id, nuevo_nombre in solo_nombres.items():
+            if nombres.get(node_id) != nuevo_nombre:
+                if node_id in discovery_flags:
+                    del discovery_flags[node_id]
+                    print(f"🔁 Reset Discovery para nodo {node_id} por cambio de nombre")
+
+        # Guardar archivos actualizados
         with open(nombres_file, "w") as f:
             json.dump(solo_nombres, f, indent=4)
+
+        with open(discovery_flag_file, "w") as f:
+            json.dump(discovery_flags, f, indent=4)
+
         return redirect(url_for("nombres_sensores"))
 
     return render_template("nombres_sensores.html", nodos=nodos)
+
 
 @app.route("/alertas", methods=["GET", "POST"])
 def alertas_config():
