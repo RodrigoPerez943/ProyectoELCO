@@ -22,6 +22,80 @@
     color: #e0e0e0;
   }
   
+/* From Uiverse.io by thomas-m-njuguna */ 
+.btn-cont {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: auto;
+  background-color: #1e1e1e;
+  margin: 0;
+  border: 1px solid #ffff;
+  border-radius: 10px;
+}
+.button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 5px;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+.button:hover .tooltip {
+  background-color: rgba(255, 255, 255, 0.1);
+  visibility: visible;
+  opacity: 1;
+}
+.settings-btn {
+  display: block;
+  transition: transform 0.4s ease-in-out;
+}
+
+.button:hover .settings-btn {
+  animation: rot 2s linear infinite;
+}
+@keyframes rot {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.tooltip {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 5px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.button {
+  background-color: #bb8888;
+  color: #222;
+  border: 1px solid #ccc;
+  padding: 10px 14px;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.button:hover {
+  background-color: #d4d4d4;
+  transform: scale(1.02);
+}
+
   /* 🔹 Header fijo */
   header {
     position: fixed;

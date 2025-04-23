@@ -8,29 +8,28 @@
 <body>
 
 <header>
-<a href="/" class="back-button">← Volver</a>
+  <button onclick="window.history.back()" class="back-button">← Volver</button>
 <h1>{{ titulo or "Proyecto de Nodos" }}</h1>
 
         <div class="header-buttons">
 
-            <!-- Botón subir nueva imagen -->
-            <form id="formNuevaImagen" method="POST" enctype="multipart/form-data">
-              <input type="file" name="imagen" id="inputImagen" style="display: none;" onchange="document.getElementById('formNuevaImagen').submit()">
-              <div class="btn-cont">
-                <button type="button" class="button" title="Subir nueva imagen" onclick="document.getElementById('inputImagen').click()">
-                  🖼️
-                  <span class="tooltip">Nueva imagen</span>
-                </button>
-              </div>
-            </form>
-          
-            <!-- Botón guardar posiciones -->
-            <div class="btn-cont">
-              <button class="button" title="Guardar posiciones" onclick="guardarPosiciones()">
-                💾
-                <span class="tooltip">Guardar posiciones</span>
-              </button>
-            </div>
+        <!-- 🔘 Botón Subir Imagen -->
+        <form id="formNuevaImagen" method="POST" enctype="multipart/form-data" style="display: inline;">
+          <input type="file" name="imagen" id="inputImagen" style="display: none;" onchange="document.getElementById('formNuevaImagen').submit()">
+          <div class="btn-cont">
+            <button type="button" class="button" onclick="document.getElementById('inputImagen').click()">
+              🖼️ Subir imagen
+            </button>
+          </div>
+        </form>
+
+        <!-- 💾 Botón Guardar Posiciones -->
+        <div class="btn-cont">
+          <button class="button" onclick="guardarPosiciones()">
+            💾 Guardar posiciones
+          </button>
+        </div>
+
           
             <!-- Botón Ajustes -->
             <form action="/ajustes">
