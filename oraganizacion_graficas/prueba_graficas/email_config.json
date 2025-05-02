@@ -1,8 +1,9 @@
 {
     "sender": "josuebh2003@gmail.com",
     "password": "umlw qiei oxcv joma",
-    "recipient": "josuebc2003@outlook.com",
+    "recipient": "josuebh2003@gmail.com",
     "smtp_server": "smtp.gmail.com",
     "smtp_port": 587,
-    "resumen_activo": false
+    "intervalo_resumen": 60,
+    "resumen_activo": true
 }

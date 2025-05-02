@@ -1,9 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}Ajustes de Intervalo{% endblock %}
-{% block header_title %}⚙️ Configuración de Intervalo{% endblock %}
+
+{% block header %}
+<header>
+  <!-- Cambiado para siempre volver a la página principal -->
+  <a href="/" class="back-button">← Volver</a>
+</header>
+{% endblock %}
+
 
 {% block content %}
+
+
+
+<h2>📬⚙️ Configuración de Intervalo</h2>
 <!-- Intervalo -->
 <form action="/ajustes" method="POST">
   <label for="horas">Horas:</label>
@@ -27,7 +37,7 @@
     {% endfor %}
   </select>
 
-  <button class="button" type="submit" style="margin-top: 1rem;">💾 Guardar</button>
+  <button class="button" type="submit" style="margin-top: 1rem;justify-content: center;align-items: center";>💾 Guardar</button>
 </form>
 
 <p style="margin-top: 1.5rem;">
@@ -96,23 +106,34 @@
 
 <h2>📧 Configuración de correo</h2>
 <form method="POST">
-  <label>Correo emisor:</label>
-  <input type="email" name="sender" value="{{ email_config.sender or '' }}"><br><br>
+  <label for="sender">Correo emisor:</label>
+  <input type="email" name="sender" id="sender" value="{{ email_config.sender or '' }}"><br><br>
 
-  <label>Contraseña:</label>
-  <input type="password" name="password" value="{{ email_config.password or '' }}"><br><br>
+  <label for="password">Contraseña:</label>
+  <input type="password" name="password" id="password" value="{{ email_config.password or '' }}"><br><br>
 
-  <label>Correo receptor:</label>
-  <input type="email" name="recipient" value="{{ email_config.recipient or '' }}"><br><br>
+  <label for="recipient">Correo receptor:</label>
+  <input type="email" name="recipient" id="recipient" value="{{ email_config.recipient or '' }}"><br><br>
 
-  <label>Servidor SMTP:</label>
-  <input type="text" name="smtp_server" value="{{ email_config.smtp_server or '' }}"><br><br>
+  <label for="smtp_server">Servidor SMTP:</label>
+  <input type="text" name="smtp_server" id="smtp_server" value="{{ email_config.smtp_server or '' }}"><br><br>
 
-  <label>Puerto SMTP:</label>
-  <input type="number" name="smtp_port" value="{{ email_config.smtp_port or 587 }}"><br><br>
+  <label for="smtp_port">Puerto SMTP:</label>
+  <input type="number" name="smtp_port" id="smtp_port" value="{{ email_config.smtp_port or 587 }}"><br><br>
 
-  <button class="button" type="submit" name="guardar_email" value="1">💾 Guardar configuración de correo</button>
+  <h3>⏱️ Intervalo de resumen (correo)</h3>
+  <div style="display: flex; justify-content: center; gap: 16px; align-items: center; margin-top: 1rem;">
+    <label for="resumen_horas">Horas:</label>
+    <input type="number" name="resumen_horas" id="resumen_horas" min="0" value="{{ resumen_intervalo // 3600 }}">
+    
+    <label for="resumen_minutos">Minutos:</label>
+    <input type="number" name="resumen_minutos" id="resumen_minutos" min="0" max="59" value="{{ (resumen_intervalo % 3600) // 60 }}">
+  </div><br>
+
+  <input type="hidden" name="guardar_email" value="1">
+  <button class="button" type="submit">💾 Guardar configuración de correo</button>
 </form>
+
 
 <hr style="margin: 2rem 0;">
 

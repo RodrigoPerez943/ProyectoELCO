@@ -461,6 +461,7 @@ EMAIL_CONFIG_FILE = os.path.join(BASE_DIR, "email_config.json")
 @app.route('/ajustes', methods=["GET", "POST"])
 def ajustes():
     intervalo_actual = obtener_intervalo()
+   
 
     # Leer configuración de correo
     if os.path.exists(EMAIL_CONFIG_FILE):
@@ -468,6 +469,8 @@ def ajustes():
             email_config = json.load(f)
     else:
         email_config = {}
+
+    resumen_intervalo = email_config.get("intervalo_resumen", 3600)
 
     MQTT_CONFIG_FILE = os.path.join(BASE_DIR, "mqtt_config.json")
     if os.path.exists(MQTT_CONFIG_FILE):
@@ -582,10 +585,16 @@ def ajustes():
                 "password": request.form.get("password", ""),
                 "recipient": request.form.get("recipient", ""),
                 "smtp_server": request.form.get("smtp_server", ""),
-                "smtp_port": int(request.form.get("smtp_port", 587))
+                "smtp_port": int(request.form.get("smtp_port", 587)),
+                "intervalo_resumen": (
+                    int(request.form.get("resumen_horas", 0)) * 3600 +
+                    int(request.form.get("resumen_minutos", 0)) * 60
+                )
             }
+
             with open(EMAIL_CONFIG_FILE, "w") as f:
                 json.dump(nueva_config, f, indent=4)
+
 
         # Guardar selección de nodos para resumen
         if "guardar_nodos_resumen" in request.form:
@@ -608,6 +617,7 @@ def ajustes():
 
     return render_template("ajustes.html",
                         intervalo=intervalo_actual,
+                        resumen_intervalo=resumen_intervalo,
                         email_config=email_config,
                         todos_los_nombres=todos_los_nombres,
                         nodos_resumen=[str(n) for n in nodos_resumen],

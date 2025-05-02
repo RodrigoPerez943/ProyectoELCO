@@ -174,11 +174,12 @@ def verificar_alertas(node_id, temperatura, humedad, presion):
 # ───────────────────────────────────────────────────────────────
 
 def obtener_intervalo():
-    if os.path.exists(INTERVALO_FILE):
-        with open(INTERVALO_FILE, "r") as file:
-            data = json.load(file)
-            return data.get("intervalo", 60)
-    return 60
+    if os.path.exists(EMAIL_CONFIG_FILE):
+        with open(EMAIL_CONFIG_FILE, "r") as file:
+            config = json.load(file)
+            return config.get("intervalo_resumen", 3600)
+    return 3600
+
 
 def ejecutar_resumen_periodico():
     while True:
