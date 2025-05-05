@@ -121,11 +121,21 @@ def index():
     # Calcular estadísticas
     exteriores = [x for x in tarjetas if x["tipo"] == "exterior"]
     interiores = [x for x in tarjetas if x["tipo"] == "interior"]
-    sensor_mas_caliente = max(tarjetas, key=lambda x: x["temperature"] if isinstance(x["temperature"], float) else -999)
-    sensor_mas_humedo = max(interiores, key=lambda x: x["humidity"] if isinstance(x["humidity"], float) else -999)
+
+    sensor_mas_caliente = (
+        max(tarjetas, key=lambda x: x["temperature"] if isinstance(x["temperature"], float) else -999)
+        if tarjetas else {"nombre": "-", "temperature": "-"}
+    )
+
+    sensor_mas_humedo = (
+        max(interiores, key=lambda x: x["humidity"] if isinstance(x["humidity"], float) else -999)
+        if interiores else {"nombre": "-", "humidity": "-"}
+    )
+
     presiones = [x["pressure"] for x in interiores if isinstance(x["pressure"], float)]
     media_presion = round(sum(presiones) / len(presiones), 1) if presiones else "N/A"
 
+    
     # Cargar alertas y contar las recientes
     alertas_file = os.path.join(BASE_DIR, "alertas_config.json")
     alertas_recientes = 0
