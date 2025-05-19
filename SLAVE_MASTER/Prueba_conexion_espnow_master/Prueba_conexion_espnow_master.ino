@@ -13,6 +13,11 @@ typedef struct struct_message {
     uint8_t exterior;
 } struct_message;
 
+// Flag para ver si ya se ha configurad el tiempo entre medidas
+// int configurado = 0;
+
+uint8_t buffer_RX[40];
+uint8_t index_RX = 0;
 
 // Configuro lo que pasa cuando se recibe
 void receiveDATA(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
@@ -33,9 +38,30 @@ void receiveDATA(const esp_now_recv_info_t *info, const uint8_t *incomingData, i
         datos_recibidos.exterior);
   Serial0.println(buffer);
 }
+
+void actualizaTiempo()
+{
+  if(index_RX == 0)
+  {
+    memset(buffer_RX, 0, sizeof(buffer_RX));
+  }
+  while(Serial.available())
+  {
+    int aux = Serial0.read();
+    Serial.println("DATO");
+    if(aux == '\n')
+    {
+      break;
+    }
+    buffer_RX[index_RX++] = aux;
+  }
+  index_RX = 0;
+}
+
 void setup() {
   Serial0.begin(115200);
   WiFi.mode(WIFI_STA); // Configurar Wi-Fi en modo estación
+  WiFi.setTxPower(WIFI_POWER_15dBm);  // Reducir la potencia de emisión
   if (esp_now_init() != ESP_OK) {
     Serial0.println("Error al inicializar ESP-NOW");
   }
@@ -50,15 +76,25 @@ void setup() {
     Serial0.println("⚠ Error al agregar peer de Broadcast");
     return;
   }
+    memset(buffer_RX, 0, sizeof(buffer_RX));
+  // Configuración del tiempo entre medidas 
+  while(1)
+  {
+    if (Serial0.available() > 0) 
+    {
+      int aux = Serial0.read();
+      if(aux == '\n')
+      {
+        break;
+      }
+      buffer_RX[index_RX++] = aux;
+    }
+  }
+  index_RX = 0;
+  Serial0.onReceive(actualizaTiempo);
 }
 
 void loop() {
-  uint8_t datos[6];
-  String macStr = WiFi.macAddress();
-  macStr.toUpperCase(); 
-  sscanf(macStr.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-          &datos[0], &datos[1], &datos[2], 
-          &datos[3], &datos[4], &datos[5]);
-  esp_err_t result = esp_now_send(macDestino, datos, sizeof(datos));
-  delay(5000);
+  esp_err_t result = esp_now_send(macDestino, buffer_RX, sizeof(buffer_RX));
+  delay(1000);
 }

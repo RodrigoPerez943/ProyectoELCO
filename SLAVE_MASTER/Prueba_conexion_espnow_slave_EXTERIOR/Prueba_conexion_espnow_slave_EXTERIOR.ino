@@ -13,6 +13,9 @@ uint8_t macDest[6];
 int conectado = 0;
 int enviado = 0;
 
+// Tiempo entre medidas
+uint32_t T = 0;
+
 esp_now_peer_info_t peerInfo;
 
 // Callback para almacenar la mac
@@ -20,6 +23,7 @@ void receiveMAC(const esp_now_recv_info_t *info, const uint8_t *incomingData, in
   // memcpy(macDest, incomingData, 6);
   if(conectado == 0)
   {
+    sscanf((char *)incomingData, "%ld", &T);
     memcpy(macDest, info->src_addr, 6);
     conectado = 1;
   }
@@ -43,10 +47,11 @@ struct_message datos_enviar;
 void setup() {
   delay(1000);
   WiFi.mode(WIFI_STA); // Configurar Wi-Fi en modo estación
-  Serial.begin(115200);
+  // Serial.begin(115200);
   sensors.begin();   //Se inicia el sensor
   if (esp_now_init() != ESP_OK) {
-    Serial.println("Error al inicializar ESP-NOW");
+    // Serial.println("Error al inicializar ESP-NOW");
+    while(true);
   }
   // Añado el callback
   esp_now_register_recv_cb(receiveMAC);
@@ -60,17 +65,22 @@ void setup() {
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-      Serial.println("⚠ Error al agregar peer");
+      // Serial.println("⚠ Error al agregar peer");
       return;
   }
-
+  if (sensors.getDeviceCount() == 0) {
+    // Serial.println("DS18B20 not detected. Please check wiring. Freezing.");
+    while(true);
+  }
 }
 
 void loop() {
-  esp_sleep_enable_timer_wakeup(5 * 1000000);
+  esp_sleep_enable_timer_wakeup(T * 1000000);
   datos_enviar.exterior = 1;
   sensors.requestTemperatures();   //Se envía el comando para leer la temperatura
   datos_enviar.temperatura = sensors.getTempCByIndex(0);
+  // Serial.println(datos_enviar.temperatura);
+  // Serial.println(T);
   datos_enviar.humedad = 0.0;
   datos_enviar.presion = 0.0;
   esp_err_t result = esp_now_send(macDest, (uint8_t *)&datos_enviar, sizeof(datos_enviar));
