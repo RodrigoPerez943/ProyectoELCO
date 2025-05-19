@@ -121,12 +121,20 @@ Por favor, toma las medidas necesarias."""
 def verificar_alertas(node_id, temperatura, humedad, presion):
     str_id = str(node_id)
 
-    with open(NOMBRES_FILE, "r") as f:
-        nombres = json.load(f)
+    if os.path.exists(NOMBRES_FILE):
+        with open(NOMBRES_FILE, "r") as f:
+            nombres = json.load(f)
+    else:
+        nombres = {}
+
     nombre = nombres.get(str_id, f"Sensor {str_id}")
 
-    with open(ALERTAS_FILE, "r") as f:
-        alertas = json.load(f)
+    # 🔐 Nueva lógica segura para alertas_config.json
+    if os.path.exists(ALERTAS_FILE):
+        with open(ALERTAS_FILE, "r") as f:
+            alertas = json.load(f)
+    else:
+        alertas = {}
 
     alert_config = alertas.setdefault(str_id, {})
     estado = alert_config.setdefault("estado", {
